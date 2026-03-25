@@ -1,0 +1,28 @@
+# fastlane/Fastfile
+default_platform(:android)
+
+platform :android do
+  desc "Runs all the tests"
+  lane :test do
+    gradle(task: "test")
+  end
+
+  desc "Submit a new Beta Build to Play Store"
+  lane :beta do
+    gradle(task: "clean assembleRelease")
+    upload_to_play_store(track: "internal")
+  end
+end
+
+platform :ios do
+  desc "Runs all the tests"
+  lane :test do
+    scan
+  end
+
+  desc "Push a new beta build to TestFlight"
+  lane :beta do
+    build_app(workspace: "Runner.xcworkspace", scheme: "Runner")
+    upload_to_testflight
+  end
+end

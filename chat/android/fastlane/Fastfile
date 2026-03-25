@@ -1,0 +1,9 @@
+default_platform(:android)
+
+platform :android do
+  desc "Deploy a new internal build"
+  lane :internal do
+    gradle(task: "clean assembleRelease")
+    # upload_to_play_store(track: 'internal')
+  end
+end

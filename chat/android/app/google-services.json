@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "38964530154",
+    "project_id": "my-messaging-chat-app-mvp",
+    "storage_bucket": "my-messaging-chat-app-mvp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:38964530154:android:32750046d0ad74a09cc093",
+        "android_client_info": {
+          "package_name": "com.example.chat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAnbj7MxWzrow6zY53gxW-iqNEGmBeWfW4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
