@@ -1,0 +1,32 @@
+{
+    "java.configuration.runtimes": [
+        {
+            "name": "JavaSE-17",
+            "path": "C:\\Program Files\\Java\\jdk-22",
+            "default": true
+        }
+    ],
+    "java.autobuild.enabled": false,
+    "java.import.gradle.enabled": false,
+    "java.project.importOnFirstTimeStartup": "never",
+    "java.import.exclusions": [
+        "**/node_modules/**",
+        "**/.metadata/**",
+        "**/archived/**",
+        "**/Pub/Cache/**",
+        "**/android/**"
+    ],
+    "java.jdt.ls.vmargs": "-Xmx1G",
+    "java.errors.incompleteClasspath.severity": "ignore",
+    "java.project.referencedLibraries": [],
+    "java.referencesCodeLens.enabled": false,
+    "java.implementationsCodeLens.enabled": false,
+    "gradle.enabled": false,
+    "java.project.resourceFilters": [
+        "node_modules",
+        ".metadata",
+        "bin",
+        "android",
+        ".gradle"
+    ]
+}
