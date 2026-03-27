@@ -1,4 +1,4 @@
-name: Flutter CI
+name: CI
 
 on:
   push:
@@ -6,21 +6,43 @@ on:
   pull_request:
     branches: [ "main" ]
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  build:
+  flutter:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v5
       - uses: subosito/flutter-action@v2.22.0
         with:
-          channel: 'stable'
+          channel: "stable"
+          cache: true
       - run: flutter pub get
-      - run: flutter format --set-exit-if-changed .
+      - run: dart format --output=none --set-exit-if-changed .
       - run: flutter analyze
       - run: flutter test
       - run: flutter build apk --debug
       - run: flutter build ios --no-codesign --debug
+
+  # Runs when Serverpod backend is added next to the app (see docs/infra/ci-cd.md).
+  serverpod:
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('chat/chat_server/pubspec.yaml') != '' }}
+
+    defaults:
+      run:
+        working-directory: chat/chat_server
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - run: dart pub get
+      - run: dart analyze
+      - run: dart test

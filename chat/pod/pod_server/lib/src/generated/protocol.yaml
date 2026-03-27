@@ -1,0 +1,24 @@
+emailIdp:
+  - login:
+  - startRegistration:
+  - verifyRegistrationCode:
+  - finishRegistration:
+  - startPasswordReset:
+  - verifyPasswordResetCode:
+  - finishPasswordReset:
+  - hasAccount:
+firebaseIdp:
+  - login:
+  - hasAccount:
+jwtRefresh:
+  - refreshAccessToken:
+greeting:
+  - hello:
+chat:
+  - openDirectChat:
+  - listMyChats:
+device:
+  - registerDevice:
+message:
+  - sendMessage:
+  - syncMessages:

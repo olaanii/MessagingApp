@@ -1,31 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import 'chat_provider.dart';
-import '../auth/auth_provider.dart';
-import '../core/shadow_background.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-class InboxScreen extends StatefulWidget {
+import '../core/async_state_widgets.dart';
+import '../core/shadow_background.dart';
+import '../providers/app_providers.dart';
+
+class InboxScreen extends ConsumerStatefulWidget {
   const InboxScreen({super.key});
 
   @override
-  State<InboxScreen> createState() => _InboxScreenState();
+  ConsumerState<InboxScreen> createState() => _InboxScreenState();
 }
 
-class _InboxScreenState extends State<InboxScreen> {
-  String _searchQuery = '';
-  final TextEditingController _searchController = TextEditingController();
-
+class _InboxScreenState extends ConsumerState<InboxScreen> {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final auth = ref.read(authNotifierProvider);
       if (auth.currentUser != null) {
-        final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-        chatProvider.listenToRecentChats(auth.currentUser!.id);
-        chatProvider.listenToMoments();
+        final chat = ref.read(chatNotifierProvider);
+        chat.listenToRecentChats(auth.currentUser!.id);
+        chat.listenToMoments();
       }
     });
   }
@@ -44,7 +42,10 @@ class _InboxScreenState extends State<InboxScreen> {
               _buildMomentsSection(),
               _buildRecentChatsFilter(),
               Expanded(
-                child: _buildChatList(),
+                child: ResponsiveBody(
+                  maxWidth: 720,
+                  child: _buildChatList(),
+                ),
               ),
             ],
           ),
@@ -71,34 +72,32 @@ class _InboxScreenState extends State<InboxScreen> {
       leading: const SizedBox.shrink(),
       actions: [
         _buildCircularAction(
-          _searchQuery.isEmpty ? LucideIcons.search : LucideIcons.x,
-          onPressed: () {
-            if (_searchQuery.isNotEmpty) {
-              setState(() {
-                _searchQuery = '';
-                _searchController.clear();
-              });
-            } else {
-              _showSearchDialog();
-            }
-          },
+          LucideIcons.search,
+          onPressed: () => context.push('/search'),
+          tooltip: 'Search chats',
         ),
         const SizedBox(width: 8),
         _buildCircularAction(
           LucideIcons.users,
           onPressed: () => context.push('/contacts'),
+          tooltip: 'Contacts',
         ),
         const SizedBox(width: 8),
         _buildCircularAction(
           LucideIcons.moreVertical,
           onPressed: () => context.push('/settings'),
+          tooltip: 'Settings',
         ),
         const SizedBox(width: 16),
       ],
     );
   }
 
-  Widget _buildCircularAction(IconData icon, {VoidCallback? onPressed}) {
+  Widget _buildCircularAction(
+    IconData icon, {
+    VoidCallback? onPressed,
+    String? tooltip,
+  }) {
     return Container(
       width: 44,
       height: 44,
@@ -107,6 +106,7 @@ class _InboxScreenState extends State<InboxScreen> {
         shape: BoxShape.circle,
       ),
       child: IconButton(
+        tooltip: tooltip,
         icon: Icon(icon, size: 20, color: Colors.white),
         onPressed: onPressed ?? () {},
       ),
@@ -114,40 +114,37 @@ class _InboxScreenState extends State<InboxScreen> {
   }
 
   Widget _buildMomentsSection() {
-    return Consumer<ChatProvider>(
-      builder: (context, chat, _) {
-        final moments = chat.moments;
-        return Container(
-          height: 120,
-          margin: const EdgeInsets.only(top: 16),
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: moments.length + 1,
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                return Row(
-                  children: [
-                    _buildMomentItem('You', null, isMe: true),
-                    Container(
-                      width: 1,
-                      height: 40,
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
-                      color: Colors.white.withValues(alpha: 0.1),
-                    ),
-                  ],
-                );
-              }
-              final moment = moments[index - 1];
-              return _buildMomentItem(
-                moment.userName,
-                moment.userImageUrl,
-                statusCount: 1, // Simplified for MVP
-              );
-            },
-          ),
-        );
-      },
+    final chat = ref.watch(chatNotifierProvider);
+    final moments = chat.moments;
+    return Container(
+      height: 120,
+      margin: const EdgeInsets.only(top: 16),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: moments.length + 1,
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return Row(
+              children: [
+                _buildMomentItem('You', null, isMe: true),
+                Container(
+                  width: 1,
+                  height: 40,
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  color: Colors.white.withValues(alpha: 0.1),
+                ),
+              ],
+            );
+          }
+          final moment = moments[index - 1];
+          return _buildMomentItem(
+            moment.userName,
+            moment.userImageUrl,
+            statusCount: 1, // Simplified for MVP
+          );
+        },
+      ),
     );
   }
 
@@ -273,39 +270,55 @@ class _InboxScreenState extends State<InboxScreen> {
   }
 
   Widget _buildChatList() {
-    return Consumer<ChatProvider>(
-      builder: (context, chat, _) {
-        final filteredChats = chat.recentChats.where((c) {
-          final title = (c['name'] ?? c['id']).toString().toLowerCase();
-          return title.contains(_searchQuery.toLowerCase());
-        }).toList();
+    final chat = ref.watch(chatNotifierProvider);
+    final auth = ref.watch(authNotifierProvider);
+    final chats = chat.recentChats;
 
-        if (chat.isLoading && filteredChats.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    if (chat.error != null && chats.isEmpty && !chat.isLoading) {
+      return AppErrorState(
+        message: chat.error!,
+        onRetry: () {
+          chat.setError(null);
+          final uid = auth.currentUser?.id;
+          if (uid != null) chat.listenToRecentChats(uid);
+        },
+      );
+    }
 
-        if (filteredChats.isEmpty) {
-          return const Center(
-            child: Text(
-              'No matching chats found.',
-              style: TextStyle(color: Colors.white30),
-            ),
-          );
-        }
+    if (chat.isLoading && chats.isEmpty) {
+      return const AppLoadingState(message: 'Loading chats…');
+    }
 
-        return ListView.builder(
-          padding: const EdgeInsets.only(bottom: 120),
-          itemCount: filteredChats.length,
-          itemBuilder: (context, index) {
-            final chatData = filteredChats[index];
+    if (chats.isEmpty) {
+      return AppEmptyState(
+        title: 'No chats yet',
+        subtitle: 'Start a conversation from the + button',
+        icon: LucideIcons.messageSquare,
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 120),
+      itemCount: chats.length,
+      itemBuilder: (context, index) {
+            final chatData = chats[index];
             final isPinned = index == 0;
             final unreadCount = index == 0 ? 4 : (index == 4 ? 2 : null);
 
+            final idStr = chatData['id'].toString();
+            final shortId = idStr.length > 4 ? idStr.substring(0, 4) : idStr;
+            final title = chatData['name'] ?? 'User $shortId';
+            final preview =
+                (chatData['lastMessage'] ?? 'No messages yet').toString();
+
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: InkWell(
-                onTap: () => context.push('/chat/${chatData['id']}'),
-                child: Row(
+              child: Semantics(
+                button: true,
+                label: 'Chat with $title. $preview',
+                child: InkWell(
+                  onTap: () => context.push('/chat/${chatData['id']}'),
+                  child: Row(
                   children: [
                     Stack(
                       children: [
@@ -345,7 +358,7 @@ class _InboxScreenState extends State<InboxScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            chatData['name'] ?? 'User ${chatData['id'].toString().substring(0, 4)}',
+                            title,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 17,
@@ -354,7 +367,7 @@ class _InboxScreenState extends State<InboxScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            chatData['lastMessage'] ?? 'No messages yet',
+                            preview,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -412,10 +425,9 @@ class _InboxScreenState extends State<InboxScreen> {
                     ),
                   ],
                 ),
+                ),
               ),
             );
-          },
-        );
       },
     );
   }
@@ -477,32 +489,6 @@ class _InboxScreenState extends State<InboxScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showSearchDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text('Search Chats'),
-        content: TextField(
-          controller: _searchController,
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Enter name...',
-            hintStyle: TextStyle(color: Colors.white30),
-          ),
-          style: const TextStyle(color: Colors.white),
-          onChanged: (v) => setState(() => _searchQuery = v),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
       ),
     );
   }
@@ -571,50 +557,50 @@ class _InboxScreenState extends State<InboxScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Icon(
-              icon,
-              size: 22,
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Icon(
+                icon,
+                size: 22,
+                color: isActive
+                    ? Colors.white
+                    : Colors.white.withValues(alpha: 0.4),
+              ),
+              if (hasNotification)
+                Positioned(
+                  right: -2,
+                  top: -2,
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFF1E1E1E),
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
               color: isActive
                   ? Colors.white
                   : Colors.white.withValues(alpha: 0.4),
             ),
-            if (hasNotification)
-              Positioned(
-                right: -2,
-                top: -2,
-                child: Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFF1E1E1E),
-                      width: 1.5,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            color: isActive
-                ? Colors.white
-                : Colors.white.withValues(alpha: 0.4),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
   String _formatTimestamp(String timestamp) {
     try {

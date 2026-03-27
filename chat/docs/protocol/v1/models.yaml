@@ -1,0 +1,104 @@
+# Serverpod serializable models — v1 sketch
+# **Live source:** `pod/pod_server/lib/src/messaging/*.spy.yaml` (Serverpod 3.4 `*.spy.yaml`).
+# Regenerate: `cd pod/pod_server && serverpod generate`
+# Field names use camelCase per typical Serverpod Dart output.
+
+class: TokenPair
+fields:
+  accessToken: String
+  refreshToken: String
+  accessExpiresAt: DateTime
+  userId: String
+  deviceId: String
+
+class: User
+fields:
+  id: String
+  firebaseUid: String
+  displayName: String?
+  photoUrl: String?
+  createdAt: DateTime
+  updatedAt: DateTime
+
+class: Device
+fields:
+  id: String
+  userId: String
+  name: String?
+  platform: String
+  lastSeenAt: DateTime?
+  createdAt: DateTime
+
+class: Chat
+fields:
+  id: String
+  type: String
+  title: String?
+  createdByUserId: String?
+  createdAt: DateTime
+  latestServerSeq: int?
+  myLastReadSeq: int?
+
+class: ChatMember
+fields:
+  chatId: String
+  userId: String
+  role: String
+  joinedAt: DateTime
+  lastReadSeq: int?
+
+class: Message
+fields:
+  id: String
+  chatId: String
+  senderUserId: String
+  senderDeviceId: String?
+  serverSeq: int
+  clientMsgId: String
+  ciphertext: String
+  nonce: String
+  schemaVersion: int
+  mediaIds: List<String>?
+  replyToMessageId: String?
+  deletedAt: DateTime?
+  createdAt: DateTime
+
+class: MessageSyncPage
+fields:
+  items: List<Message>
+  nextCursor: String?
+
+class: MediaUploadGrant
+fields:
+  mediaId: String
+  uploadUrl: String
+  expiresAt: DateTime
+  headersJson: String
+
+class: PublicKeyBundle
+fields:
+  deviceId: String
+  userId: String
+  bundleJson: String
+  updatedAt: DateTime
+
+class: ApiError
+fields:
+  code: String
+  message: String
+  requestId: String?
+
+# --- Realtime (Serverpod: chat_server/lib/src/streaming/chat_stream_envelope.spy.yaml)
+class: ChatStreamEnvelope
+fields:
+  type: String
+  idempotencyKey: String?
+  deviceId: String
+  chatId: String?
+  ts: DateTime?
+  payloadJson: String?
+  errorCode: String?
+  errorMessage: String?
+  requestId: String?
+  serverSeq: int?
+  messageId: String?

@@ -9,8 +9,10 @@ import '../../domain/models/moment_model.dart';
 import '../../domain/models/user_model.dart';
 import '../../data/services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../core/contacts/contacts_permission_state.dart';
 import '../../domain/models/contact_model.dart';
 import '../../data/services/contact_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class ChatProvider extends ChangeNotifier {
   final MessagingService _messagingService = MessagingService();
@@ -29,6 +31,8 @@ class ChatProvider extends ChangeNotifier {
   UserModel? _otherUser;
   Map<String, bool> _typingUsers = {};
   String? _currentChatId;
+  ContactsPermissionState _contactsPermissionState =
+      ContactsPermissionState.notDetermined;
 
   StreamSubscription<List<MessageModel>>? _messagesSubscription;
   StreamSubscription<List<Map<String, dynamic>>>? _recentChatsSubscription;
@@ -43,6 +47,8 @@ class ChatProvider extends ChangeNotifier {
   List<MomentModel> get moments => _moments;
   UserModel? get otherUser => _otherUser;
   bool get isOtherUserTyping => _typingUsers[_otherUser?.id] ?? false;
+  ContactsPermissionState get contactsPermissionState =>
+      _contactsPermissionState;
 
   void setLoading(bool loading) {
     _isLoading = loading;
@@ -88,29 +94,31 @@ class ChatProvider extends ChangeNotifier {
         );
 
     _typingSubscription?.cancel();
-    _typingSubscription = _messagingService.getTypingStream(chatId).listen(
-      (typingMap) {
-        _typingUsers = typingMap;
-        notifyListeners();
-      },
-      onError: (err) => setError(err.toString()),
-    );
+    _typingSubscription = _messagingService.getTypingStream(chatId).listen((
+      typingMap,
+    ) {
+      _typingUsers = typingMap;
+      notifyListeners();
+    }, onError: (err) => setError(err.toString()));
   }
 
-  Future<void> updateTypingStatus(String chatId, String userId, bool isTyping) async {
+  Future<void> updateTypingStatus(
+    String chatId,
+    String userId,
+    bool isTyping,
+  ) async {
     await _messagingService.setTypingStatus(chatId, userId, isTyping);
   }
 
   /// Listen to the active moments (stories).
   void listenToMoments() {
     _momentsSubscription?.cancel();
-    _momentsSubscription = _messagingService.getMomentsStream().listen(
-      (newMoments) {
-        _moments = newMoments;
-        notifyListeners();
-      },
-      onError: (err) => setError(err.toString()),
-    );
+    _momentsSubscription = _messagingService.getMomentsStream().listen((
+      newMoments,
+    ) {
+      _moments = newMoments;
+      notifyListeners();
+    }, onError: (err) => setError(err.toString()));
   }
 
   /// Listen to the user's recent chats for the Inbox screen.
@@ -265,9 +273,10 @@ class ChatProvider extends ChangeNotifier {
     try {
       final currentUserId = _auth.currentUser?.uid;
       if (currentUserId == null) return;
-      
-      final chatId = _currentChatId ?? 'reported_${DateTime.now().millisecondsSinceEpoch}';
-      
+
+      final chatId =
+          _currentChatId ?? 'reported_${DateTime.now().millisecondsSinceEpoch}';
+
       await _authService.reportContent(
         reporterId: currentUserId,
         reportedUserId: otherUserId,
@@ -294,21 +303,64 @@ class ChatProvider extends ChangeNotifier {
     _currentChatId = null;
     _typingUsers = {};
     _error = null;
+    _contactsPermissionState = ContactsPermissionState.notDetermined;
     notifyListeners();
   }
 
+  Future<void> refreshContactsPermissionStatus() async {
+    _contactsPermissionState =
+        await _contactService.readContactsPermissionState();
+    notifyListeners();
+  }
+
+  /// In-app rationale should be shown before calling this (see [ContactsAccessPrompt]).
+  Future<void> requestContactsAccessAndSync() async {
+    setLoading(true);
+    setError(null);
+    try {
+      _contactsPermissionState =
+          await _contactService.requestContactsAccess();
+      notifyListeners();
+      if (_contactsPermissionState == ContactsPermissionState.granted) {
+        await _syncContactsFromDevice();
+      } else {
+        _discoveredContacts = [];
+        notifyListeners();
+      }
+    } catch (e) {
+      setError('Contacts permission failed: ${e.toString()}');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  Future<void> openContactsPermissionSettings() => openAppSettings();
+
+  /// Reloads address book and matches against Firestore. No-op if permission not granted.
   Future<void> syncContacts() async {
     setLoading(true);
     setError(null);
     try {
-      final localContacts = await _contactService.getLocalContacts();
-      _discoveredContacts = await _contactService.syncWithFirestore(localContacts);
-      notifyListeners();
+      await refreshContactsPermissionStatus();
+      if (_contactsPermissionState != ContactsPermissionState.granted) {
+        _discoveredContacts = [];
+        notifyListeners();
+        return;
+      }
+      await _syncContactsFromDevice();
     } catch (e) {
       setError('Contact sync failed: ${e.toString()}');
     } finally {
       setLoading(false);
     }
+  }
+
+  Future<void> _syncContactsFromDevice() async {
+    final localContacts = await _contactService.getLocalContacts();
+    _discoveredContacts = await _contactService.syncWithFirestore(
+      localContacts,
+    );
+    notifyListeners();
   }
 
   Future<String?> createGroup(String name, List<String> participantIds) async {

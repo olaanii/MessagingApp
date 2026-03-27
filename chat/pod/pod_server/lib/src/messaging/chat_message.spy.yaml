@@ -1,0 +1,14 @@
+# Ciphertext/nonce as base64 text over the wire (E2EE payload).
+class: ChatMessage
+table: chat_message
+fields:
+  id: UuidValue, defaultModel=random
+  chatId: UuidValue
+  senderAuthUserId: UuidValue
+  senderDeviceId: UuidValue?
+  serverSeq: int
+  clientMsgId: String
+  ciphertext: String
+  nonce: String
+  schemaVersion: int
+  createdAt: DateTime, default=now

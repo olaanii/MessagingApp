@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import '../auth/auth_provider.dart';
-import '../chat/chat_provider.dart';
-import '../core/shadow_background.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-class SettingsScreen extends StatelessWidget {
+import '../auth/auth_provider.dart';
+import '../core/async_state_widgets.dart';
+import '../core/shadow_background.dart';
+import '../providers/app_providers.dart';
+
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authNotifierProvider);
+    final user = auth.currentUser;
+
     return ShadowBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -23,41 +28,51 @@ class SettingsScreen extends StatelessWidget {
           leading: Padding(
             padding: const EdgeInsets.only(left: 16.0),
             child: _buildCircularAction(
+              context,
               LucideIcons.chevronLeft,
               onPressed: () => context.pop(),
+              tooltip: 'Back',
             ),
           ),
           actions: [
-            _buildCircularAction(LucideIcons.moreHorizontal),
+            _buildCircularAction(context, LucideIcons.moreHorizontal),
             const SizedBox(width: 16),
           ],
         ),
         body: SafeArea(
-          child: Consumer<AuthProvider>(
-            builder: (context, auth, _) {
-              final user = auth.currentUser;
-              return SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-                child: Column(
-                  children: [
-                    _buildProfileHeader(user?.name ?? 'Khadija Dubois', user?.avatarUrl),
-                    const SizedBox(height: 32),
-                    _buildStatsRow(),
-                    const SizedBox(height: 32),
-                    _buildMediaSection(context),
-                    const SizedBox(height: 32),
-                    _buildSettingsList(context, auth),
-                  ],
-                ),
-              );
-            },
+          child: ResponsiveBody(
+            maxWidth: 640,
+            child: auth.isLoading && user == null
+                ? const AppLoadingState()
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+                    child: Column(
+                      children: [
+                        _buildProfileHeader(
+                          user?.name ?? 'Khadija Dubois',
+                          user?.avatarUrl,
+                        ),
+                        const SizedBox(height: 32),
+                        _buildStatsRow(),
+                        const SizedBox(height: 32),
+                        _buildMediaSection(context),
+                        const SizedBox(height: 32),
+                        _buildSettingsList(context, ref, auth),
+                      ],
+                    ),
+                  ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildCircularAction(IconData icon, {VoidCallback? onPressed}) {
+  Widget _buildCircularAction(
+    BuildContext context,
+    IconData icon, {
+    VoidCallback? onPressed,
+    String? tooltip,
+  }) {
     return Container(
       width: 44,
       height: 44,
@@ -66,6 +81,7 @@ class SettingsScreen extends StatelessWidget {
         shape: BoxShape.circle,
       ),
       child: IconButton(
+        tooltip: tooltip,
         icon: Icon(icon, size: 20, color: Colors.white),
         onPressed: onPressed ?? () {},
       ),
@@ -218,16 +234,16 @@ class SettingsScreen extends StatelessWidget {
         ),
       ),
       child: Center(
-        child: Icon(
-          icon,
-          color: Colors.white.withValues(alpha: 0.1),
-          size: 32,
-        ),
+        child: Icon(icon, color: Colors.white.withValues(alpha: 0.1), size: 32),
       ),
     );
   }
 
-  Widget _buildSettingsList(BuildContext context, AuthProvider auth) {
+  Widget _buildSettingsList(
+    BuildContext context,
+    WidgetRef ref,
+    AuthProvider auth,
+  ) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.03),
@@ -235,6 +251,48 @@ class SettingsScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
+          _buildSimplifiedTile(
+            LucideIcons.search,
+            'Search chats',
+            onPressed: () => context.push('/search'),
+          ),
+          _divider(),
+          _buildSimplifiedTile(
+            LucideIcons.smartphone,
+            'Devices',
+            onPressed: () => context.push('/settings/devices'),
+          ),
+          _divider(),
+          _buildSimplifiedTile(
+            LucideIcons.database,
+            'Backup & restore',
+            onPressed: () => context.push('/settings/backup'),
+          ),
+          _divider(),
+          _buildSimplifiedTile(
+            LucideIcons.shieldAlert,
+            'Safety: report & block',
+            subtitle: 'Uses More menu inside a chat for now.',
+            onPressed: () {
+              showDialog<void>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Report or block'),
+                  content: const Text(
+                    'Open a conversation, tap ···, then choose Block or Report. '
+                    'Server-backed moderation arrives with Serverpod.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          _divider(),
           _buildSimplifiedTile(LucideIcons.bell, 'Notification'),
           _divider(),
           _buildSimplifiedTile(LucideIcons.image, 'Media visibility'),
@@ -257,8 +315,9 @@ class SettingsScreen extends StatelessWidget {
             'Logout',
             color: Colors.redAccent,
             onPressed: () {
-              auth.logOut();
-              Provider.of<ChatProvider>(context, listen: false).reset();
+              ref.read(authNotifierProvider).logOut();
+              ref.read(chatNotifierProvider).reset();
+              context.go('/');
             },
           ),
         ],
@@ -275,7 +334,14 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSimplifiedTile(IconData icon, String title, {Widget? trailing, Color? color, VoidCallback? onPressed}) {
+  Widget _buildSimplifiedTile(
+    IconData icon,
+    String title, {
+    String? subtitle,
+    Widget? trailing,
+    Color? color,
+    VoidCallback? onPressed,
+  }) {
     return ListTile(
       leading: Icon(icon, color: color ?? Colors.white, size: 20),
       title: Text(
@@ -286,6 +352,15 @@ class SettingsScreen extends StatelessWidget {
           color: color ?? Colors.white,
         ),
       ),
+      subtitle: subtitle != null
+          ? Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.white.withValues(alpha: 0.45),
+              ),
+            )
+          : null,
       trailing:
           trailing ??
           Icon(

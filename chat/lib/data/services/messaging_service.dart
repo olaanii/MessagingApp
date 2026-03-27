@@ -57,10 +57,10 @@ class MessagingService {
         .orderBy('timestamp', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => MomentModel.fromJson(doc.data()))
-          .toList();
-    });
+          return snapshot.docs
+              .map((doc) => MomentModel.fromJson(doc.data()))
+              .toList();
+        });
   }
 
   /// Sets the typing status for a user in a specific chat.
@@ -74,10 +74,7 @@ class MessagingService {
         .doc(chatId)
         .collection('typing')
         .doc(userId)
-        .set({
-      'isTyping': isTyping,
-      'timestamp': FieldValue.serverTimestamp(),
-    });
+        .set({'isTyping': isTyping, 'timestamp': FieldValue.serverTimestamp()});
   }
 
   /// Stream of user IDs to their typing status.
@@ -88,12 +85,12 @@ class MessagingService {
         .collection('typing')
         .snapshots()
         .map((snapshot) {
-      final Map<String, bool> typingMap = {};
-      for (final doc in snapshot.docs) {
-        typingMap[doc.id] = doc.data()['isTyping'] ?? false;
-      }
-      return typingMap;
-    });
+          final Map<String, bool> typingMap = {};
+          for (final doc in snapshot.docs) {
+            typingMap[doc.id] = doc.data()['isTyping'] ?? false;
+          }
+          return typingMap;
+        });
   }
 
   /// Sends a message. If internet is unavailable, saves to offline Hive storage.

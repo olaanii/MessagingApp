@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import 'auth_provider.dart';
 
-class CreateProfileScreen extends StatefulWidget {
+import '../providers/app_providers.dart';
+
+class CreateProfileScreen extends ConsumerStatefulWidget {
   const CreateProfileScreen({super.key});
 
   @override
-  State<CreateProfileScreen> createState() => _CreateProfileScreenState();
+  ConsumerState<CreateProfileScreen> createState() =>
+      _CreateProfileScreenState();
 }
 
-class _CreateProfileScreenState extends State<CreateProfileScreen> {
+class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _statusController = TextEditingController();
 
   Future<void> _saveProfile() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final authProvider = ref.read(authNotifierProvider);
 
     if (_nameController.text.isEmpty) {
       ScaffoldMessenger.of(
@@ -58,6 +60,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = ref.watch(authNotifierProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Profile')),
       body: SafeArea(
@@ -122,19 +125,15 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
                 ),
               ),
               const SizedBox(height: 48),
-              Consumer<AuthProvider>(
-                builder: (context, auth, _) {
-                  return ElevatedButton(
-                    onPressed: auth.isLoading ? null : _saveProfile,
-                    child: auth.isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Complete Setup'),
-                  );
-                },
+              ElevatedButton(
+                onPressed: auth.isLoading ? null : _saveProfile,
+                child: auth.isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Complete Setup'),
               ),
             ],
           ),

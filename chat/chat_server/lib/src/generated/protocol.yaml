@@ -1,0 +1,30 @@
+emailIdp:
+  - login:
+  - startRegistration:
+  - startPasswordReset:
+  - verifyRegistrationCode:
+  - finishRegistration:
+  - verifyPasswordResetCode:
+  - finishPasswordReset:
+  - hasAccount:
+jwtRefresh:
+  - refreshAccessToken:
+throttledEmailIdp:
+  - login:
+  - startRegistration:
+  - startPasswordReset:
+  - verifyRegistrationCode:
+  - finishRegistration:
+  - verifyPasswordResetCode:
+  - finishPasswordReset:
+  - hasAccount:
+greeting:
+  - hello:
+media:
+  - requestUploadSlot:
+  - finalizeUpload:
+safety:
+  - submitReport:
+  - blockUser:
+chatStream:
+  - chatRoom:

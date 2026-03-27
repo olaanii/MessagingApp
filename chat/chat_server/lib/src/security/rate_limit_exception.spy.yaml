@@ -1,0 +1,5 @@
+### Serializable rate / abuse limit rejection (ADR-0007). Client may map [code] to UX.
+exception: RateLimitException
+fields:
+  code: String
+  message: String

@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import 'auth_provider.dart';
 
-class OtpVerificationScreen extends StatefulWidget {
+import '../providers/app_providers.dart';
+
+class OtpVerificationScreen extends ConsumerStatefulWidget {
   const OtpVerificationScreen({super.key});
 
   @override
-  State<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
+  ConsumerState<OtpVerificationScreen> createState() =>
+      _OtpVerificationScreenState();
 }
 
-class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
+class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
   final TextEditingController _otpController = TextEditingController();
 
   Future<void> _verifyOtp() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final authProvider = ref.read(authNotifierProvider);
 
     if (_otpController.text.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -44,6 +46,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = ref.watch(authNotifierProvider);
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -88,19 +91,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 child: const Text('Resend Code'),
               ),
               const Spacer(),
-              Consumer<AuthProvider>(
-                builder: (context, auth, _) {
-                  return ElevatedButton(
-                    onPressed: auth.isLoading ? null : _verifyOtp,
-                    child: auth.isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Verify'),
-                  );
-                },
+              ElevatedButton(
+                onPressed: auth.isLoading ? null : _verifyOtp,
+                child: auth.isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Verify'),
               ),
               const SizedBox(height: 16),
             ],

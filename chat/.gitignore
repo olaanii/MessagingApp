@@ -46,14 +46,17 @@ app.*.map.json
 
 # Environment variables & sensitive config
 .env*
+!.env.example
 lib/core/env/env.g.dart
 lib/firebase_options.dart
 google-services.json
 GoogleService-Info.plist
 
-# Markdown files (except README.md)
+# Markdown files (except README.md and /docs)
 *.md
 !README.md
+!docs/**/*.md
+!mvp_plan.md
 
 # Firebase config
 firebase.json

@@ -1,0 +1,38 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "chat_flutter",
+            "cwd": "${workspaceFolder}/chat_flutter",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart"
+        },
+        {
+            "name": "chat_server",
+            "cwd": "${workspaceFolder}/chat_server",
+            "request": "launch",
+            "type": "dart",
+            "preLaunchTask": "docker_compose_up",
+            "program": "bin/main.dart",
+            "env": {
+                "SERVERPOD_PASSWORD_database": "WWBkrcYZjA5qD2UKo0m_CbQb6fhdIoln"
+            },
+            "args": [
+                "--apply-migrations"
+            ]
+        }
+    ],
+    "compounds": [
+        {
+            "name": "chat (full stack)",
+            "configurations": [
+                "chat_server",
+                "chat_flutter"
+            ],
+            "presentation": {
+                "order": 1
+            }
+        }
+    ]
+}

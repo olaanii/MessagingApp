@@ -49,6 +49,12 @@
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSContactsUsageDescription</key>
+	<string>We use your contacts so you can message people you know and add them to groups. Names and numbers are read on your device to find accounts on the app.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

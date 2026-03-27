@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import 'auth_provider.dart';
 
-class PhoneEntryScreen extends StatefulWidget {
+import '../providers/app_providers.dart';
+
+class PhoneEntryScreen extends ConsumerStatefulWidget {
   const PhoneEntryScreen({super.key});
 
   @override
-  State<PhoneEntryScreen> createState() => _PhoneEntryScreenState();
+  ConsumerState<PhoneEntryScreen> createState() => _PhoneEntryScreenState();
 }
 
-class _PhoneEntryScreenState extends State<PhoneEntryScreen> {
+class _PhoneEntryScreenState extends ConsumerState<PhoneEntryScreen> {
   final TextEditingController _phoneController = TextEditingController();
 
   Future<void> _sendOtp() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final authProvider = ref.read(authNotifierProvider);
 
     if (_phoneController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -44,6 +45,7 @@ class _PhoneEntryScreenState extends State<PhoneEntryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = ref.watch(authNotifierProvider);
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -81,21 +83,17 @@ class _PhoneEntryScreenState extends State<PhoneEntryScreen> {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  Consumer<AuthProvider>(
-                    builder: (context, auth, _) {
-                      return ElevatedButton(
-                        onPressed: auth.isLoading ? null : _sendOtp,
-                        child: auth.isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Text('Send Verification Code'),
-                      );
-                    },
+                  ElevatedButton(
+                    onPressed: auth.isLoading ? null : _sendOtp,
+                    child: auth.isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text('Send Verification Code'),
                   ),
                   const SizedBox(height: 16),
                 ],

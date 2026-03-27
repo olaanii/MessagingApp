@@ -1,0 +1,14 @@
+### User-generated safety report (opaque message ids only; no ciphertext). ADR-0007.
+class: SafetyReport
+table: safety_report
+fields:
+  id: UuidValue?, defaultPersist=random_v7
+  reporterAuthUserId: UuidValue
+  targetUserId: UuidValue?
+  targetChatId: String?
+  targetMessageId: String?
+  reason: String
+  createdAt: DateTime, defaultModel=now
+indexes:
+  safety_report_reporter_time:
+    fields: reporterAuthUserId, createdAt

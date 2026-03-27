@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../data/services/auth_service.dart';
 import '../../domain/models/user_model.dart';
@@ -10,6 +11,7 @@ class AuthProvider extends ChangeNotifier {
   String? _error;
   UserModel? _user;
   bool _codeSent = false;
+  StreamSubscription<User?>? _authSubscription;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -28,7 +30,9 @@ class AuthProvider extends ChangeNotifier {
   }
 
   void _init() {
-    _authService.authStateChanges.listen((firebaseUser) async {
+    _authSubscription = _authService.authStateChanges.listen((
+      firebaseUser,
+    ) async {
       if (firebaseUser == null) {
         _user = null;
         notifyListeners();
@@ -38,6 +42,12 @@ class AuthProvider extends ChangeNotifier {
         notifyListeners();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> sendOtp(String phoneNumber) async {

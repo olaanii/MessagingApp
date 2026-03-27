@@ -1,122 +1,101 @@
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
+import 'dart:async';
 
-import 'presentation/auth/phone_entry_screen.dart';
-import 'presentation/auth/otp_verification_screen.dart';
-import 'presentation/auth/create_profile_screen.dart';
-import 'presentation/chat/inbox_screen.dart';
-import 'presentation/chat/chat_detail_screen.dart';
-import 'presentation/chat/group_creation_screen.dart';
-import 'presentation/settings/settings_screen.dart';
-import 'presentation/theme/app_theme.dart';
-import 'presentation/auth/auth_provider.dart';
-import 'presentation/chat/chat_provider.dart';
-import 'presentation/chat/contacts_screen.dart';
-
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'core/platform/fcm_background_handler.dart';
+import 'core/platform/fcm_platform_service.dart';
+import 'data/services/fcm_token_sync.dart';
 import 'firebase_options.dart';
+import 'presentation/auth/auth_provider.dart';
+import 'presentation/onboarding/onboarding_holder.dart';
+import 'presentation/providers/app_providers.dart';
+import 'presentation/providers/go_router_provider.dart';
+import 'presentation/theme/app_theme.dart';
 
 bool _isFirebaseInitialized = false;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  final prefs = await SharedPreferences.getInstance();
+  final onboardingDone =
+      prefs.getBool(OnboardingHolder.prefsKey) ?? false;
+  final onboardingHolder = OnboardingHolder(onboardingDone);
+
   try {
-    // Attempt to initialize Firebase with generated options.
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
     _isFirebaseInitialized = true;
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   } catch (e) {
     debugPrint('Firebase initialization warning: $e');
-    // We catch this to allow the app to run even without Firebase configured,
-    // though Auth services will fail with more descriptive errors later.
     _isFirebaseInitialized = false;
   }
 
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => ChatProvider()),
+    ProviderScope(
+      overrides: [
+        onboardingHolderProvider.overrideWith(
+          (ref) => onboardingHolder,
+          disposeNotifier: false,
+        ),
       ],
       child: MessagingApp(isFirebaseInitialized: _isFirebaseInitialized),
     ),
   );
 }
 
-class MessagingApp extends StatefulWidget {
+class MessagingApp extends ConsumerStatefulWidget {
   final bool isFirebaseInitialized;
   const MessagingApp({super.key, required this.isFirebaseInitialized});
 
   @override
-  State<MessagingApp> createState() => _MessagingAppState();
+  ConsumerState<MessagingApp> createState() => _MessagingAppState();
 }
 
-class _MessagingAppState extends State<MessagingApp> {
-  late final GoRouter _router;
+class _MessagingAppState extends ConsumerState<MessagingApp> {
+  FcmPlatformService? _push;
 
   @override
   void initState() {
     super.initState();
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
-    _router = GoRouter(
-      initialLocation: '/',
-      refreshListenable: authProvider,
-      redirect: (context, state) {
-        final bool loggedIn = authProvider.isAuthenticated;
-        final bool isAuthRoute = state.matchedLocation == '/' || 
-                               state.matchedLocation == '/otp' || 
-                               state.matchedLocation == '/profile';
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !widget.isFirebaseInitialized) return;
+      unawaited(_syncPushFromAuth(ref.read(authNotifierProvider)));
+    });
+  }
 
-        if (!loggedIn && !isAuthRoute) {
-          return '/';
-        }
-        if (loggedIn && state.matchedLocation == '/') {
-          return '/inbox';
-        }
-        return null;
-      },
-      routes: [
-        GoRoute(path: '/', builder: (context, state) => const PhoneEntryScreen()),
-        GoRoute(
-          path: '/otp',
-          builder: (context, state) => const OtpVerificationScreen(),
-        ),
-        GoRoute(
-          path: '/profile',
-          builder: (context, state) => const CreateProfileScreen(),
-        ),
-        GoRoute(path: '/inbox', builder: (context, state) => const InboxScreen()),
-        GoRoute(
-          path: '/chat/:id',
-          builder: (context, state) {
-            final id = state.pathParameters['id']!;
-            return ChatDetailScreen(chatId: id);
-          },
-        ),
-        GoRoute(
-          path: '/settings',
-          builder: (context, state) => const SettingsScreen(),
-        ),
-        GoRoute(
-          path: '/contacts',
-          builder: (context, state) => const ContactsScreen(),
-        ),
-        GoRoute(
-          path: '/new-group',
-          builder: (context, state) => const GroupCreationScreen(),
-        ),
-      ],
-    );
+  @override
+  void dispose() {
+    _push?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _syncPushFromAuth(AuthProvider auth) async {
+    if (!widget.isFirebaseInitialized || _push == null) {
+      return;
+    }
+    if (!auth.isAuthenticated) {
+      await _push!.resetSession();
+      return;
+    }
+    final uid = auth.user?.id ?? FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      return;
+    }
+    await _push!.startSession(uid);
+    _push!.flushPendingNavigation();
   }
 
   @override
   Widget build(BuildContext context) {
     if (!widget.isFirebaseInitialized && identical(0, 0.0)) {
-      // Simple web check
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         home: Scaffold(
@@ -150,13 +129,31 @@ class _MessagingAppState extends State<MessagingApp> {
       );
     }
 
+    final router = ref.watch(goRouterProvider);
+
+    if (widget.isFirebaseInitialized) {
+      _push ??= FcmPlatformService(
+        router: router,
+        isAuthenticated: () => ref.read(authNotifierProvider).isAuthenticated,
+        publishToken: (userId, token) => syncFcmTokenToFirestore(
+          userId: userId,
+          token: token,
+        ),
+      );
+    }
+
+    ref.listen<AuthProvider>(authNotifierProvider, (previous, auth) {
+      if (!widget.isFirebaseInitialized) return;
+      unawaited(_syncPushFromAuth(auth));
+    });
+
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'Messaging App',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
-      routerConfig: _router,
+      routerConfig: router,
     );
   }
 }
