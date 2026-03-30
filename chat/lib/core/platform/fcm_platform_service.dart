@@ -24,6 +24,26 @@ import 'fcm_message_payload.dart';
 /// Push is **best-effort** on web (service worker, permission, browser limits).
 /// Treat in-app inbox + sync as the source of truth; do not rely on background
 /// delivery.
+///
+/// ## Wiring `publishToken`
+/// The [publishToken] callback should be wired to `syncFcmToken` (from
+/// `lib/data/services/fcm_token_sync.dart`) with the current
+/// [MessagingSyncMode] and the Serverpod `client.push.registerToken` call
+/// injected as `serverpodRegister`. Example:
+///
+/// ```dart
+/// FcmPlatformService(
+///   router: router,
+///   publishToken: (userId, token) => syncFcmToken(
+///     userId: userId,
+///     token: token,
+///     mode: MessagingSyncMode(),
+///     serverpodRegister: (uid, tok, platform) =>
+///         client.push.registerToken(uid, tok, platform),
+///   ),
+///   isAuthenticated: () => authNotifier.isAuthenticated,
+/// )
+/// ```
 typedef PushTokenPublisher = Future<void> Function(
   String userId,
   String token,

@@ -12,12 +12,16 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:serverpod/serverpod.dart' as _i1;
 import '../auth/email_idp_endpoint.dart' as _i2;
+import '../auth/firebase_auth_endpoint.dart' as _i13;
 import '../auth/jwt_refresh_endpoint.dart' as _i3;
 import '../auth/throttled_email_idp_endpoint.dart' as _i4;
 import '../greetings/greeting_endpoint.dart' as _i5;
 import '../media/media_endpoint.dart' as _i6;
 import '../safety/safety_endpoint.dart' as _i7;
 import '../streaming/chat_stream_endpoint.dart' as _i8;
+import '../security/key_endpoint.dart' as _i14;
+import '../auth/device_endpoint.dart' as _i15;
+import '../auth/push_endpoint.dart' as _i16;
 import 'package:chat_server/src/generated/media/media_upload_request.dart'
     as _i9;
 import 'package:chat_server/src/generated/streaming/chat_stream_envelope.dart'
@@ -35,6 +39,12 @@ class Endpoints extends _i1.EndpointDispatch {
         ..initialize(
           server,
           'emailIdp',
+          null,
+        ),
+      'firebaseIdp': _i13.FirebaseAuthEndpoint()
+        ..initialize(
+          server,
+          'firebaseIdp',
           null,
         ),
       'jwtRefresh': _i3.JwtRefreshEndpoint()
@@ -71,6 +81,24 @@ class Endpoints extends _i1.EndpointDispatch {
         ..initialize(
           server,
           'chatStream',
+          null,
+        ),
+      'key': _i14.KeyEndpoint()
+        ..initialize(
+          server,
+          'key',
+          null,
+        ),
+      'device': _i15.DeviceEndpoint()
+        ..initialize(
+          server,
+          'device',
+          null,
+        ),
+      'push': _i16.PushEndpoint()
+        ..initialize(
+          server,
+          'push',
           null,
         ),
     };
@@ -250,6 +278,42 @@ class Endpoints extends _i1.EndpointDispatch {
                 Map<String, dynamic> params,
               ) async => (endpoints['emailIdp'] as _i2.EmailIdpEndpoint)
                   .hasAccount(session),
+        ),
+      },
+    );
+    connectors['firebaseIdp'] = _i1.EndpointConnector(
+      name: 'firebaseIdp',
+      endpoint: endpoints['firebaseIdp']!,
+      methodConnectors: {
+        'login': _i1.MethodConnector(
+          name: 'login',
+          params: {
+            'idToken': _i1.ParameterDescription(
+              name: 'idToken',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['firebaseIdp'] as _i13.FirebaseAuthEndpoint).login(
+                    session,
+                    idToken: params['idToken'],
+                  ),
+        ),
+        'hasAccount': _i1.MethodConnector(
+          name: 'hasAccount',
+          params: {},
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['firebaseIdp'] as _i13.FirebaseAuthEndpoint)
+                      .hasAccount(session),
         ),
       },
     );
@@ -652,6 +716,153 @@ class Endpoints extends _i1.EndpointDispatch {
                 params['deviceId'],
                 streamParams['inbound']!.cast<_i10.ChatStreamEnvelope>(),
               ),
+        ),
+      },
+    );
+    connectors['key'] = _i1.EndpointConnector(
+      name: 'key',
+      endpoint: endpoints['key']!,
+      methodConnectors: {
+        'uploadBundle': _i1.MethodConnector(
+          name: 'uploadBundle',
+          params: {
+            'deviceId': _i1.ParameterDescription(
+              name: 'deviceId',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'bundleJson': _i1.ParameterDescription(
+              name: 'bundleJson',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['key'] as _i14.KeyEndpoint).uploadBundle(
+                    session,
+                    params['deviceId'],
+                    params['bundleJson'],
+                  ),
+        ),
+        'fetchUserBundle': _i1.MethodConnector(
+          name: 'fetchUserBundle',
+          params: {
+            'userId': _i1.ParameterDescription(
+              name: 'userId',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['key'] as _i14.KeyEndpoint).fetchUserBundle(
+                    session,
+                    params['userId'],
+                  ),
+        ),
+        'uploadWrappedKeys': _i1.MethodConnector(
+          name: 'uploadWrappedKeys',
+          params: {
+            'chatId': _i1.ParameterDescription(
+              name: 'chatId',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'envelopesJson': _i1.ParameterDescription(
+              name: 'envelopesJson',
+              type: _i1.getType<List<String>>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['key'] as _i14.KeyEndpoint).uploadWrappedKeys(
+                    session,
+                    params['chatId'],
+                    (params['envelopesJson'] as List).cast<String>(),
+                  ),
+        ),
+      },
+    );
+    connectors['device'] = _i1.EndpointConnector(
+      name: 'device',
+      endpoint: endpoints['device']!,
+      methodConnectors: {
+        'list': _i1.MethodConnector(
+          name: 'list',
+          params: {},
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['device'] as _i15.DeviceEndpoint).list(session),
+        ),
+        'revoke': _i1.MethodConnector(
+          name: 'revoke',
+          params: {
+            'deviceId': _i1.ParameterDescription(
+              name: 'deviceId',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['device'] as _i15.DeviceEndpoint).revoke(
+                    session,
+                    params['deviceId'],
+                  ),
+        ),
+      },
+    );
+    connectors['push'] = _i1.EndpointConnector(
+      name: 'push',
+      endpoint: endpoints['push']!,
+      methodConnectors: {
+        'registerToken': _i1.MethodConnector(
+          name: 'registerToken',
+          params: {
+            'userId': _i1.ParameterDescription(
+              name: 'userId',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'token': _i1.ParameterDescription(
+              name: 'token',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+            'platform': _i1.ParameterDescription(
+              name: 'platform',
+              type: _i1.getType<String>(),
+              nullable: false,
+            ),
+          },
+          call:
+              (
+                _i1.Session session,
+                Map<String, dynamic> params,
+              ) async =>
+                  (endpoints['push'] as _i16.PushEndpoint).registerToken(
+                    session,
+                    params['userId'],
+                    params['token'],
+                    params['platform'],
+                  ),
         ),
       },
     );

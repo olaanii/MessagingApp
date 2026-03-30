@@ -176,6 +176,32 @@ class EndpointEmailIdp extends EndpointThrottledEmailIdp {
   );
 }
 
+/// Firebase phone/email sign-in endpoint for the chat server.
+/// {@category Endpoint}
+class EndpointFirebaseIdp extends _i4.EndpointFirebaseIdpBase {
+  EndpointFirebaseIdp(_i1.EndpointCaller caller) : super(caller);
+
+  @override
+  String get name => 'firebaseIdp';
+
+  /// Validates a Firebase ID token and either logs in the associated user or
+  /// creates a new account, returning an [AuthSuccess] with access + refresh tokens.
+  @override
+  _i2.Future<_i3.AuthSuccess> login({required String idToken}) =>
+      caller.callServerEndpoint<_i3.AuthSuccess>(
+        'firebaseIdp',
+        'login',
+        {'idToken': idToken},
+      );
+
+  @override
+  _i2.Future<bool> hasAccount() => caller.callServerEndpoint<bool>(
+    'firebaseIdp',
+    'hasAccount',
+    {},
+  );
+}
+
 /// JWT refresh with ADR-0007 per-IP throttling.
 /// {@category Endpoint}
 class EndpointJwtRefresh extends _i3.EndpointRefreshJwtTokens {
@@ -495,6 +521,7 @@ class Client extends _i1.ServerpodClientShared {
              disconnectStreamsOnLostInternetConnection,
        ) {
     emailIdp = EndpointEmailIdp(this);
+    firebaseIdp = EndpointFirebaseIdp(this);
     jwtRefresh = EndpointJwtRefresh(this);
     throttledEmailIdp = EndpointThrottledEmailIdp(this);
     greeting = EndpointGreeting(this);
@@ -505,6 +532,8 @@ class Client extends _i1.ServerpodClientShared {
   }
 
   late final EndpointEmailIdp emailIdp;
+
+  late final EndpointFirebaseIdp firebaseIdp;
 
   late final EndpointJwtRefresh jwtRefresh;
 
@@ -523,6 +552,7 @@ class Client extends _i1.ServerpodClientShared {
   @override
   Map<String, _i1.EndpointRef> get endpointRefLookup => {
     'emailIdp': emailIdp,
+    'firebaseIdp': firebaseIdp,
     'jwtRefresh': jwtRefresh,
     'throttledEmailIdp': throttledEmailIdp,
     'greeting': greeting,

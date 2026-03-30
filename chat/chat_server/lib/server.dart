@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:serverpod/serverpod.dart';
 import 'package:serverpod_auth_idp_server/core.dart';
 import 'package:serverpod_auth_idp_server/providers/email.dart';
+import 'package:serverpod_auth_idp_server/providers/firebase.dart';
 
 import 'src/generated/endpoints.dart';
 import 'src/generated/protocol.dart';
@@ -41,6 +42,10 @@ void run(List<String> args) async {
         sendRegistrationVerificationCode: _sendRegistrationCode,
         sendPasswordResetVerificationCode: _sendPasswordResetCode,
       ),
+      // Firebase phone/email sign-in per ADR-0003.
+      // Set `firebaseServiceAccountKey` in `config/passwords.yaml` to enable
+      // token verification in staging/production.
+      FirebaseIdpConfigFromPasswords(),
     ],
   );
 

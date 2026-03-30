@@ -36,4 +36,7 @@ abstract class Env {
 
   @EnviedField(varName: 'FIREBASE_STORAGE_BUCKET', obfuscate: true)
   static final String storageBucket = _Env.storageBucket;
+
+  @EnviedField(varName: 'SERVERPOD_API_URL', obfuscate: true)
+  static final String serverpodApiUrl = _Env.serverpodApiUrl;
 }
