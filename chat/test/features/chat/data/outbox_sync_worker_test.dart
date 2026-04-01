@@ -370,13 +370,11 @@ void main() {
         keyStore.setKey('chat_1', chatKey);
 
         final sentEnvelopes = <ChatStreamEnvelope>[];
-        int openCount = 0;
 
         final worker = OutboxSyncWorker(
           syncRepo: syncRepo,
           messageRepo: messageRepo,
           openChatRoom: (chatId, deviceId, inbound) {
-            openCount++;
             final ctrl = StreamController<ChatStreamEnvelope>();
             inbound.listen(sentEnvelopes.add);
             return ctrl.stream;

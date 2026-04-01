@@ -24,11 +24,7 @@ final class E2eeEngine {
   /// New X25519 identity key pair (32-byte seed / clamped scalar per library).
   Future<SimpleKeyPairData> newIdentityKeyPair() async {
     final pair = await _x25519.newKeyPair();
-    final data = await pair.extract();
-    if (data is! SimpleKeyPairData) {
-      throw StateError('Expected X25519 SimpleKeyPairData');
-    }
-    return data;
+    return await pair.extract();
   }
 
   /// Restore identity from a stored 32-byte seed.
@@ -37,11 +33,7 @@ final class E2eeEngine {
       throw ArgumentError.value(seed32.length, 'seed32', 'expected 32 bytes');
     }
     final pair = await _x25519.newKeyPairFromSeed(List<int>.from(seed32));
-    final data = await pair.extract();
-    if (data is! SimpleKeyPairData) {
-      throw StateError('Expected X25519 SimpleKeyPairData');
-    }
-    return data;
+    return await pair.extract();
   }
 
   /// Decode uploaded [PublicKeyBundle.x25519Public] bytes to a [SimplePublicKey].
@@ -103,11 +95,7 @@ final class E2eeEngine {
     required SimplePublicKey recipientPublic,
   }) async {
     final ephemeral = await _x25519.newKeyPair();
-    final extracted = await ephemeral.extract();
-    if (extracted is! SimpleKeyPairData) {
-      throw StateError('Expected X25519 SimpleKeyPairData');
-    }
-    final ephemeralData = extracted;
+    final ephemeralData = await ephemeral.extract();
     final ephemeralPub = ephemeralData.publicKey.bytes;
     final shared = await _x25519.sharedSecretKey(
       keyPair: ephemeral,

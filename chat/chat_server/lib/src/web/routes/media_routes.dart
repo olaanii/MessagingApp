@@ -75,7 +75,7 @@ class MediaFileRoute extends Route {
       final bytes = await file.readAsBytes();
       return Response.ok(
         body: Body.fromData(bytes),
-        headers: Headers({'content-type': target.mimeType}),
+        headers: Headers.build((h) => h['content-type'] = [target.mimeType]),
       );
     } catch (e, st) {
       session.log('media file read error: $e\n$st');

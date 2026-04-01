@@ -37,22 +37,6 @@ final class _FakeMessageRepository implements MessageRepository {
       const Stream.empty();
 }
 
-/// Builds a [StreamSubscriptionServiceImpl] using [ChatRoomOpener] directly —
-/// no fake [Client] subclass needed.
-StreamSubscriptionServiceImpl _makeService({
-  required Stream<ChatStreamEnvelope> Function(String chatId, String deviceId) serverStream,
-  required _FakeMessageRepository repo,
-  required E2eeEngine crypto,
-  required Future<SecretKey?> Function(String chatId) getChatKey,
-}) {
-  return StreamSubscriptionServiceImpl(
-    openChatRoom: (chatId, deviceId, _) => serverStream(chatId, deviceId),
-    messageRepository: repo,
-    crypto: crypto,
-    getChatKey: getChatKey,
-  );
-}
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 final _engine = E2eeEngine();
@@ -112,7 +96,7 @@ void main() {
 
         final completer = Completer<void>();
         final service = StreamSubscriptionServiceImpl(
-          openChatRoom: (_, __, ___) => Stream.fromIterable([
+          openChatRoom: (_, _, _) => Stream.fromIterable([
             _messageEnvelope(chatId: chatId, payloadJson: payloadJson),
           ]),
           messageRepository: repo,
@@ -160,7 +144,7 @@ void main() {
 
       final completer = Completer<void>();
       final service = StreamSubscriptionServiceImpl(
-        openChatRoom: (_, __, ___) => Stream.fromIterable([
+        openChatRoom: (_, _, _) => Stream.fromIterable([
           _messageEnvelope(chatId: chatId, payloadJson: badPayload),
         ]),
         messageRepository: repo,
@@ -200,7 +184,7 @@ void main() {
 
       final completer = Completer<void>();
       final service = StreamSubscriptionServiceImpl(
-        openChatRoom: (_, __, ___) => Stream.fromIterable([
+        openChatRoom: (_, _, _) => Stream.fromIterable([
           _messageEnvelope(chatId: chatId, payloadJson: payloadJson),
         ]),
         messageRepository: repo,
@@ -246,7 +230,7 @@ void main() {
 
       final completer = Completer<void>();
       final service = StreamSubscriptionServiceImpl(
-        openChatRoom: (_, __, ___) => Stream.fromIterable(envelopes),
+        openChatRoom: (_, _, _) => Stream.fromIterable(envelopes),
         messageRepository: repo,
         crypto: _engine,
         getChatKey: (_) async => chatKey,
@@ -314,7 +298,7 @@ void main() {
       final connectionEvents = <ConnectionEvent>[];
 
       final service = StreamSubscriptionServiceImpl(
-        openChatRoom: (_, __, ___) {
+        openChatRoom: (_, _, _) {
           connectCount++;
           return Stream.error(Exception('auth_required'));
         },
