@@ -1,11 +1,11 @@
-// ignore_for_file: lines_longer_than_80_chars
+﻿// ignore_for_file: lines_longer_than_80_chars
 
 import 'package:chat/core/serverpod/serverpod_auth_key_manager.dart';
 import 'package:chat/features/auth/data/serverpod_auth_repository.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-// ── Testable repository wrapper ───────────────────────────────────────────────
+// -- Testable repository wrapper -----------------------------------------------
 
 /// A testable wrapper that mirrors [ServerpodAuthRepositoryImpl] logic but
 /// accepts injected exchange/refresh/logout implementations so tests can
@@ -56,7 +56,7 @@ final class _TestableRepo implements ServerpodAuthRepository {
 }
 
 
-// ── Token sample data ─────────────────────────────────────────────────────────
+// -- Token sample data ---------------------------------------------------------
 
 /// Representative (accessToken, refreshToken) pairs for Property 8.
 final _tokenPairs = <(String, String)>[
@@ -78,7 +78,7 @@ final _exchangeFailures = <AuthException>[
   const AuthServerException('server error'),
 ];
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// -- Helpers -------------------------------------------------------------------
 
 ServerpodAuthKeyManager _makeManager() {
   FlutterSecureStorage.setMockInitialValues({});
@@ -94,14 +94,14 @@ _TestableRepo _makeRepo({
       exchangeImpl: exchangeImpl,
     );
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
+// -- Tests ---------------------------------------------------------------------
 
 void main() {
   setUp(() {
     FlutterSecureStorage.setMockInitialValues({});
   });
 
-  // ── Property 8: Token Exchange Persists Both Tokens ───────────────────────
+  // -- Property 8: Token Exchange Persists Both Tokens -----------------------
   //
   // **Validates: Requirements 2.2, 2.3**
   //
@@ -186,7 +186,7 @@ void main() {
     });
   });
 
-  // ── Property 9: Failed Auth Exchange Leaves No Partial State ─────────────
+  // -- Property 9: Failed Auth Exchange Leaves No Partial State -------------
   //
   // **Validates: Requirements 2.8**
   //
@@ -278,7 +278,7 @@ void main() {
   _tokenRefreshTests();
 }
 
-// ── TokenRefreshInterceptor tests ─────────────────────────────────────────────
+// -- TokenRefreshInterceptor tests ---------------------------------------------
 
 /// A minimal [ServerpodAuthRepository] stub for interceptor tests.
 final class _StubRepo implements ServerpodAuthRepository {
@@ -313,7 +313,7 @@ TokenRefreshInterceptor _makeInterceptor({
       authKeyManager: manager,
     );
 
-// ── Property 5: Token Refresh Transparency ────────────────────────────────────
+// -- Property 5: Token Refresh Transparency ------------------------------------
 // Exactly one refresh attempt and one retry signal on 401; no more.
 // **Validates: Requirements 2.4**
 
@@ -407,7 +407,7 @@ void _tokenRefreshTests() {
     });
   });
 
-  // ── Property 10: Failed Token Refresh Clears All Tokens ──────────────────
+  // -- Property 10: Failed Token Refresh Clears All Tokens ------------------
   // Failed refresh removes both tokens and emits AuthEvent.sessionExpired.
   // **Validates: Requirements 2.6**
 
