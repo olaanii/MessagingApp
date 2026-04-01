@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:chat_client/chat_client.dart';
-import 'package:cryptography/cryptography.dart';
 
 import '../../../core/crypto/e2ee_engine.dart';
 import '../../../data/repositories/message_repository.dart';

@@ -542,12 +542,9 @@ void main() {
       keyStore.setKey('chat_1', chatKey);
 
       const clientMsgId = 'backoff-test-1';
-      final clockTimes = <DateTime>[];
-      int clockCallCount = 0;
       final baseTime = DateTime(2024, 6, 1, 10, 0, 0);
 
       DateTime fakeClock() {
-        clockCallCount++;
         return baseTime;
       }
 
