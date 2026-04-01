@@ -227,7 +227,20 @@ class _ContactsScreenState extends ConsumerState<ContactsScreen> {
         ),
         trailing: isInvite
             ? TextButton(
-                onPressed: () {},
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Invite ${contact.displayName} to the app'),
+                      duration: const Duration(seconds: 2),
+                      action: SnackBarAction(
+                        label: 'Share',
+                        onPressed: () {
+                          // TODO: Implement share functionality
+                        },
+                      ),
+                    ),
+                  );
+                },
                 child: const Text(
                   'INVITE',
                   style: TextStyle(color: Colors.orange, fontSize: 12),

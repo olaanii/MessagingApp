@@ -293,21 +293,38 @@ class SettingsScreen extends ConsumerWidget {
             },
           ),
           _divider(),
-          _buildSimplifiedTile(LucideIcons.bell, 'Notification'),
+          _buildSimplifiedTile(
+            LucideIcons.bell,
+            'Notification',
+            onPressed: () => context.push('/settings/notifications'),
+          ),
           _divider(),
-          _buildSimplifiedTile(LucideIcons.image, 'Media visibility'),
+          _buildSimplifiedTile(
+            LucideIcons.image,
+            'Media visibility',
+            onPressed: () => context.push('/settings/media-visibility'),
+          ),
           _divider(),
-          _buildSimplifiedTile(LucideIcons.bookmark, 'Bookmarked'),
+          _buildSimplifiedTile(
+            LucideIcons.bookmark,
+            'Bookmarked',
+            onPressed: () => context.push('/settings/bookmarked'),
+          ),
           _divider(),
           _buildSimplifiedTile(
             LucideIcons.lock,
             'Lock Chat',
             trailing: Switch(
               value: false,
-              onChanged: (v) {},
+              onChanged: (v) {
+                if (v) {
+                  context.push('/settings/lock-chat');
+                }
+              },
               activeThumbColor: Colors.white,
               activeTrackColor: Colors.white24,
             ),
+            onPressed: () => context.push('/settings/lock-chat'),
           ),
           _divider(),
           _buildSimplifiedTile(

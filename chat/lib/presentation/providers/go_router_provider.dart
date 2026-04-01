@@ -14,6 +14,10 @@ import '../chat/global_search_screen.dart';
 import '../chat/group_creation_screen.dart';
 import '../chat/inbox_screen.dart';
 import '../onboarding/onboarding_screen.dart';
+import '../settings/bookmarked_messages_screen.dart';
+import '../settings/lock_chat_screen.dart';
+import '../settings/media_visibility_screen.dart';
+import '../settings/notification_settings_screen.dart';
 import '../settings/settings_screen.dart';
 import 'app_providers.dart';
 
@@ -103,6 +107,22 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/new-group',
         builder: (context, state) => const GroupCreationScreen(),
+      ),
+      GoRoute(
+        path: '/settings/notifications',
+        builder: (context, state) => const NotificationSettingsScreen(),
+      ),
+      GoRoute(
+        path: '/settings/media-visibility',
+        builder: (context, state) => const MediaVisibilityScreen(),
+      ),
+      GoRoute(
+        path: '/settings/bookmarked',
+        builder: (context, state) => const BookmarkedMessagesScreen(),
+      ),
+      GoRoute(
+        path: '/settings/lock-chat',
+        builder: (context, state) => const LockChatScreen(),
       ),
     ],
   );
