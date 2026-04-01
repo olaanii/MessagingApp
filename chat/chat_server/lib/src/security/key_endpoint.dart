@@ -146,7 +146,7 @@ class KeyEndpoint extends Endpoint {
   String _authenticatedUserId(Session session) {
     final auth = session.authenticated;
     if (auth == null) {
-      throw ServerpodUnauthenticatedException();
+      throw Exception('Unauthenticated');
     }
     return auth.userIdentifier;
   }

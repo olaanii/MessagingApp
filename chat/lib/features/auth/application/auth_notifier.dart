@@ -197,7 +197,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   // ── Convenience getters (UI compatibility) ────────────────────────────────
 
   UserModel? get currentUser {
-    final s = state.valueOrNull;
+    final s = state.value;
     return s is AuthStateAuthenticated ? s.user : null;
   }
 

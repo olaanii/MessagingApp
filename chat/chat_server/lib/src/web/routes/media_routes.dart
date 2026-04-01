@@ -22,7 +22,7 @@ class MediaBlobRoute extends Route {
         return Response.badRequest(body: Body.fromString('Missing token'));
       }
 
-      final startRaw = request.headers['x-chunk-start'];
+      final startRaw = request.headers['x-chunk-start']?.first;
       final chunkStart = startRaw == null ? 0 : int.tryParse(startRaw) ?? -1;
       if (chunkStart < 0) {
         return Response.badRequest(body: Body.fromString('Bad X-Chunk-Start'));
@@ -75,7 +75,7 @@ class MediaFileRoute extends Route {
       final bytes = await file.readAsBytes();
       return Response.ok(
         body: Body.fromData(bytes),
-        headers: {'content-type': target.mimeType},
+        headers: Headers({'content-type': target.mimeType}),
       );
     } catch (e, st) {
       session.log('media file read error: $e\n$st');

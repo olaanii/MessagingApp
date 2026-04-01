@@ -298,7 +298,7 @@ class ResponsiveSystem {
     
     return scaleFactor.clamp(
       1.0,
-      ResponsiveConfig.maxTextScaleFactor,
+      ResponsiveConfig.maxtextScaler,
     );
   }
 
