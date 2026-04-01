@@ -338,50 +338,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     );
   }
 
-  void _showBlockConfirmDialog(
-    BuildContext context,
-    ChatProvider chat,
-    String otherUserId,
-  ) {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: Text(
-          StoreComplianceCopy.blockDialogTitle,
-          style: const TextStyle(color: Colors.white),
-        ),
-        content: Text(
-          StoreComplianceCopy.blockDialogBody,
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.9)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(StoreComplianceCopy.cancelButton),
-          ),
-          TextButton(
-            onPressed: () async {
-              await chat.blockUser(otherUserId);
-              if (ctx.mounted) Navigator.pop(ctx);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(StoreComplianceCopy.blockSuccessMessage),
-                  ),
-                );
-                context.pop();
-              }
-            },
-            child: Text(
-              StoreComplianceCopy.blockConfirmButton,
-              style: const TextStyle(color: Colors.redAccent),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   void _showReportDialog(BuildContext context, ChatProvider chat) {
     final TextEditingController reasonController = TextEditingController();

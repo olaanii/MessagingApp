@@ -15,6 +15,9 @@ class InboxScreen extends ConsumerStatefulWidget {
 }
 
 class _InboxScreenState extends ConsumerState<InboxScreen> {
+  int _selectedFilterIndex = 0;
+  int _selectedNavIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -156,7 +159,9 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4.0),
-      child: Column(
+      child: InkWell(
+        onTap: isMe ? _showAddStoryOptions : null,
+        child: Column(
         children: [
           Stack(
             children: [
@@ -226,6 +231,54 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
           ),
         ],
       ),
+      ),
+    );
+  }
+
+  void _showAddStoryOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.grey[900],
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(LucideIcons.camera, color: Colors.white),
+              title: const Text('Take Photo', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Camera feature coming soon')),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(LucideIcons.image, color: Colors.white),
+              title: const Text('Choose from Gallery', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Gallery feature coming soon')),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(LucideIcons.type, color: Colors.white),
+              title: const Text('Text Status', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Text status feature coming soon')),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -239,26 +292,29 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: filters.length,
         itemBuilder: (context, index) {
-          final isActive = index == 0;
+          final isActive = index == _selectedFilterIndex;
           return Padding(
             padding: const EdgeInsets.only(right: 8.0),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              decoration: BoxDecoration(
-                color: isActive
-                    ? const Color(0xFF4A4A4A)
-                    : Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Center(
-                child: Text(
-                  filters[index],
-                  style: TextStyle(
-                    color: isActive
-                        ? Colors.white
-                        : Colors.white.withValues(alpha: 0.4),
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+            child: InkWell(
+              onTap: () => setState(() => _selectedFilterIndex = index),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? const Color(0xFF4A4A4A)
+                      : Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Center(
+                  child: Text(
+                    filters[index],
+                    style: TextStyle(
+                      color: isActive
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.4),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
@@ -456,13 +512,34 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                   _buildNavItem(
                     LucideIcons.messageSquare,
                     'Chats',
-                    true,
+                    _selectedNavIndex == 0,
                     hasNotification: true,
+                    onPressed: () => setState(() => _selectedNavIndex = 0),
                   ),
                   const SizedBox(width: 20),
-                  _buildNavItem(LucideIcons.phone, 'Call', false),
+                  _buildNavItem(
+                    LucideIcons.phone,
+                    'Call',
+                    _selectedNavIndex == 1,
+                    onPressed: () {
+                      setState(() => _selectedNavIndex = 1);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Calls feature coming soon')),
+                      );
+                    },
+                  ),
                   const SizedBox(width: 20),
-                  _buildNavItem(LucideIcons.aperture, 'Updates', false),
+                  _buildNavItem(
+                    LucideIcons.aperture,
+                    'Updates',
+                    _selectedNavIndex == 2,
+                    onPressed: () {
+                      setState(() => _selectedNavIndex = 2);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Updates feature coming soon')),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
