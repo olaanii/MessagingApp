@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:chat_client/chat_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/serverpod/serverpod_client_provider.dart';
@@ -34,8 +33,7 @@ enum ChatStreamConnectionState {
 /// - Exposes [ChatStreamConnectionState] to the UI.
 ///
 /// Requirements: 3.1, 3.8
-class ChatStreamNotifier
-    extends AutoDisposeNotifier<ChatStreamConnectionState> {
+class ChatStreamNotifier extends Notifier<ChatStreamConnectionState> {
   ChatStreamNotifier(this._chatId);
 
   final String _chatId;
@@ -103,7 +101,7 @@ class ChatStreamNotifier
 /// Provider family keyed by [chatId].
 ///
 /// Auto-disposes when the chat screen is closed (Requirement 3.8).
-final chatStreamNotifierProvider = AutoDisposeNotifierProvider.family<
-    ChatStreamNotifier, ChatStreamConnectionState, String>(
-  (chatId) => ChatStreamNotifier(chatId),
+final chatStreamNotifierProvider = NotifierProvider.autoDispose
+    .family<ChatStreamNotifier, ChatStreamConnectionState, String>(
+  ChatStreamNotifier.new,
 );
