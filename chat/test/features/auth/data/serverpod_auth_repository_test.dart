@@ -89,12 +89,12 @@ _TestableRepo _makeRepo({
   required ServerpodAuthKeyManager manager,
   required Future<TokenPair> Function() exchangeImpl,
 }) =>
-void main() {
-  setUp(() {
-    FlutterSecureStorage.setMockInitialValues({});
-  });
+    _TestableRepo(
+      authKeyManager: manager,
+      exchangeImpl: exchangeImpl,
+    );
 
-  _tokenRefreshTests(); Tests ─────────────────────────────────────────────────────────────────────
+// ── Tests ─────────────────────────────────────────────────────────────────────
 
 void main() {
   setUp(() {
@@ -274,6 +274,8 @@ void main() {
       expect(await manager.readRefreshToken(), isNull);
     });
   });
+
+  _tokenRefreshTests();
 }
 
 // ── TokenRefreshInterceptor tests ─────────────────────────────────────────────

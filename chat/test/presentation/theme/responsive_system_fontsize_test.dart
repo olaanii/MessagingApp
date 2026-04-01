@@ -14,7 +14,7 @@ void main() {
         MediaQuery(
           data: const MediaQueryData(
             size: Size(750, 1334),
-            textScaler: 1.0,
+            textScaler: TextScaler.linear(1.0),
           ),
           child: Builder(
             builder: (context) {
@@ -40,7 +40,7 @@ void main() {
         MediaQuery(
           data: const MediaQueryData(
             size: Size(400, 800),
-            textScaler: 1.0,
+            textScaler: TextScaler.linear(1.0),
           ),
           child: Builder(
             builder: (context) {
@@ -67,7 +67,7 @@ void main() {
         MediaQuery(
           data: const MediaQueryData(
             size: Size(768, 1024),
-            textScaler: 1.0,
+            textScaler: TextScaler.linear(1.0),
           ),
           child: Builder(
             builder: (context) {
@@ -94,7 +94,7 @@ void main() {
         MediaQuery(
           data: const MediaQueryData(
             size: Size(1440, 900),
-            textScaler: 1.0,
+            textScaler: TextScaler.linear(1.0),
           ),
           child: Builder(
             builder: (context) {
@@ -121,7 +121,7 @@ void main() {
         MediaQuery(
           data: const MediaQueryData(
             size: Size(375, 812),
-            textScaler: 1.5,
+            textScaler: TextScaler.linear(1.5),
           ),
           child: Builder(
             builder: (context) {
@@ -147,7 +147,7 @@ void main() {
         MediaQuery(
           data: const MediaQueryData(
             size: Size(375, 812),
-            textScaler: 3.0,
+            textScaler: TextScaler.linear(3.0),
           ),
           child: Builder(
             builder: (context) {
@@ -173,7 +173,7 @@ void main() {
         MediaQuery(
           data: const MediaQueryData(
             size: Size(200, 400),
-            textScaler: 1.0,
+            textScaler: TextScaler.linear(1.0),
           ),
           child: Builder(
             builder: (context) {
@@ -199,7 +199,7 @@ void main() {
         MediaQuery(
           data: const MediaQueryData(
             size: Size(2560, 1440),
-            textScaler: 1.0,
+            textScaler: TextScaler.linear(1.0),
           ),
           child: Builder(
             builder: (context) {
@@ -225,7 +225,7 @@ void main() {
         MediaQuery(
           data: const MediaQueryData(
             size: Size(ResponsiveConfig.referenceWidth, 812),
-            textScaler: 1.0,
+            textScaler: TextScaler.linear(1.0),
           ),
           child: Builder(
             builder: (context) {
@@ -251,7 +251,7 @@ void main() {
         MediaQuery(
           data: const MediaQueryData(
             size: Size(750, 1334),
-            textScaler: 1.0,
+            textScaler: TextScaler.linear(1.0),
           ),
           child: Builder(
             builder: (context) {
@@ -276,7 +276,7 @@ void main() {
         MediaQuery(
           data: const MediaQueryData(
             size: Size(750, 1334),
-            textScaler: 1.0,
+            textScaler: TextScaler.linear(1.0),
           ),
           child: Builder(
             builder: (context) {
@@ -302,7 +302,7 @@ void main() {
         MediaQuery(
           data: const MediaQueryData(
             size: Size(375, 812),
-            textScaler: 1.0,
+            textScaler: TextScaler.linear(1.0),
           ),
           child: Builder(
             builder: (context) {
@@ -320,7 +320,7 @@ void main() {
         MediaQuery(
           data: const MediaQueryData(
             size: Size(768, 1024),
-            textScaler: 1.0,
+            textScaler: TextScaler.linear(1.0),
           ),
           child: Builder(
             builder: (context) {
@@ -342,7 +342,7 @@ void main() {
         MediaQuery(
           data: const MediaQueryData(
             size: Size(500, 800),
-            textScaler: 1.0,
+            textScaler: TextScaler.linear(1.0),
           ),
           child: Builder(
             builder: (context) {
@@ -363,7 +363,7 @@ void main() {
         MediaQuery(
           data: const MediaQueryData(
             size: Size(1440, 900),
-            textScaler: 1.0,
+            textScaler: TextScaler.linear(1.0),
           ),
           child: Builder(
             builder: (context) {
@@ -387,7 +387,7 @@ void main() {
         MediaQuery(
           data: const MediaQueryData(
             size: Size(768, 1024),
-            textScaler: 1.5,
+            textScaler: TextScaler.linear(1.5),
           ),
           child: Builder(
             builder: (context) {
