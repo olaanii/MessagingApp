@@ -42,13 +42,13 @@ final class ServerpodMediaUploadService implements MediaUploadService {
     required String mimeType,
     void Function(double progress)? onProgress,
   }) async {
-    double _lastProgress = 0.0;
+    double lastProgress = 0.0;
 
-    void _guardedProgress(double value) {
+    void guardedProgress(double value) {
       // Clamp to [0.0, 1.0] and enforce non-decreasing invariant.
       final clamped = value.clamp(0.0, 1.0);
-      if (clamped >= _lastProgress) {
-        _lastProgress = clamped;
+      if (clamped >= lastProgress) {
+        lastProgress = clamped;
         onProgress?.call(clamped);
       }
     }
@@ -57,7 +57,7 @@ final class ServerpodMediaUploadService implements MediaUploadService {
       file: file,
       mimeType: mimeType,
       chatId: chatId,
-      onProgress: onProgress != null ? _guardedProgress : null,
+      onProgress: onProgress != null ? guardedProgress : null,
     );
 
     return fetchUrl;

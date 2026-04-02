@@ -397,7 +397,7 @@ class ChatNotifier extends Notifier<ChatState> {
       'senderId': senderId,
       'receiverId': receiverId,
       'content': content,
-      if (imageUrl != null) 'imageUrl': imageUrl,
+      'imageUrl': ?imageUrl,
     };
 
     // Encode payload as JSON string manually to avoid importing dart:convert

@@ -4,7 +4,6 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../core/async_state_widgets.dart';
 import '../core/shadow_background.dart';
-import '../core/widgets.dart';
 
 class BookmarkedMessagesScreen extends StatelessWidget {
   const BookmarkedMessagesScreen({super.key});

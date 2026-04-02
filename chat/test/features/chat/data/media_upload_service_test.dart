@@ -137,7 +137,7 @@ void main() {
             reported[i],
             greaterThanOrEqualTo(reported[i - 1]),
             reason:
-                'progress[${i}]=${reported[i]} < progress[${i - 1}]=${reported[i - 1]} '
+                'progress[$i]=${reported[i]} < progress[${i - 1}]=${reported[i - 1]} '
                 'for sequence $seq',
           );
         }

@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:chat_client/chat_client.dart';
-import 'package:serverpod_client/serverpod_client.dart'
-    show ServerpodClientException;
 
 import '../../../core/crypto/e2ee_engine.dart';
 import '../../../core/serverpod/serverpod_auth_key_manager.dart';

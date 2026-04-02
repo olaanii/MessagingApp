@@ -65,8 +65,8 @@ final class _FakeSyncRepository implements SyncRepository {
     _updates.add({
       'clientMsgId': clientMsgId,
       'state': state,
-      if (attemptCount != null) 'attemptCount': attemptCount,
-      if (nextRetryAt != null) 'nextRetryAt': nextRetryAt,
+      'attemptCount': ?attemptCount,
+      'nextRetryAt': ?nextRetryAt,
     });
     final existing = _items[clientMsgId];
     if (existing != null) {
