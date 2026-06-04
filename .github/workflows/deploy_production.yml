@@ -1,0 +1,306 @@
+name: Deploy Production
+
+on:
+  push:
+    branches: [ "main" ]
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy (e.g., v1.0.0)'
+        required: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: chat_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      # Install Serverpod CLI
+      - name: Install Serverpod CLI
+        run: dart pub global activate serverpod_cli
+
+      # Generate Serverpod code
+      - name: Generate Serverpod code
+        run: serverpod generate
+        working-directory: server
+
+      # Test Serverpod backend
+      - name: Install server dependencies
+        run: dart pub get
+        working-directory: server/chat_server
+
+      - name: Run server tests
+        run: dart test
+        working-directory: server/chat_server
+        env:
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_NAME: chat_test
+          DATABASE_USER: postgres
+          DATABASE_PASSWORD: postgres
+
+      # Test Flutter app
+      - name: Install Flutter dependencies
+        run: flutter pub get
+        working-directory: chat
+
+      - name: Analyze Flutter code
+        run: flutter analyze
+        working-directory: chat
+
+      - name: Run Flutter tests
+        run: flutter test
+        working-directory: chat
+
+  deploy_backend:
+    runs-on: ubuntu-latest
+    needs: test
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      # Install Serverpod CLI
+      - name: Install Serverpod CLI
+        run: dart pub global activate serverpod_cli
+
+      # Generate Serverpod code
+      - name: Generate Serverpod code
+        run: serverpod generate
+        working-directory: server
+
+      # Install dependencies
+      - name: Install server dependencies
+        run: dart pub get
+        working-directory: server/chat_server
+
+      # Build server
+      - name: Build server
+        run: dart compile exe bin/main.dart -o chat_server
+        working-directory: server/chat_server
+
+      # Create database backup before migration
+      - name: Backup production database
+        run: |
+          echo "Creating database backup before migration..."
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          
+          BACKUP_FILE="backup_$(date +%Y%m%d_%H%M%S).sql"
+          PGPASSWORD=${{ secrets.PROD_DB_PASSWORD }} pg_dump \
+            -h ${{ secrets.PROD_DB_HOST }} \
+            -p ${{ secrets.PROD_DB_PORT }} \
+            -U ${{ secrets.PROD_DB_USER }} \
+            -d ${{ secrets.PROD_DB_NAME }} \
+            -F c -f $BACKUP_FILE
+          
+          echo "Backup created: $BACKUP_FILE"
+          # TODO: Upload backup to S3 or secure storage
+        continue-on-error: false
+
+      # Apply database migrations
+      - name: Apply database migrations
+        run: |
+          echo "Applying database migrations to production environment..."
+          sudo apt-get install -y postgresql-client
+          
+          # Apply migrations using psql
+          PGPASSWORD=${{ secrets.PROD_DB_PASSWORD }} psql \
+            -h ${{ secrets.PROD_DB_HOST }} \
+            -p ${{ secrets.PROD_DB_PORT }} \
+            -U ${{ secrets.PROD_DB_USER }} \
+            -d ${{ secrets.PROD_DB_NAME }} \
+            -f server/chat_server/migrations/apply_all.sql
+          
+          echo "Migrations applied successfully"
+        continue-on-error: false
+
+      # Deploy to production server
+      # TODO: Replace with your actual deployment method
+      # Options include:
+      #   - SSH deployment with zero-downtime: scp + systemctl reload
+      #   - Docker: build and push to registry, update service
+      #   - Kubernetes: kubectl apply or helm upgrade
+      #   - Cloud Run: gcloud run deploy
+      #   - AWS ECS: aws ecs update-service
+      - name: Deploy backend to production
+        run: |
+          echo "Production backend deployment placeholder"
+          echo "Server binary: server/chat_server/chat_server"
+          echo "Configure your deployment target in this step"
+          echo "Ensure zero-downtime deployment strategy"
+
+  build_android:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      # Install Serverpod CLI
+      - name: Install Serverpod CLI
+        run: dart pub global activate serverpod_cli
+
+      # Generate Serverpod client code
+      - name: Generate Serverpod client code
+        run: serverpod generate
+        working-directory: server
+
+      # Install Flutter dependencies
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: chat
+
+      # Build Android App Bundle for Play Store
+      - name: Build App Bundle (production)
+        run: |
+          flutter build appbundle --release \
+            --dart-define=ENV=production \
+            --dart-define=SERVERPOD_HOST=${{ secrets.PROD_SERVERPOD_HOST }} \
+            --dart-define=SERVERPOD_PORT=${{ secrets.PROD_SERVERPOD_PORT }}
+        working-directory: chat
+
+      # Upload App Bundle artifact
+      - name: Upload App Bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-aab
+          path: chat/build/app/outputs/bundle/release/app-release.aab
+          retention-days: 90
+
+  build_ios:
+    runs-on: macos-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      # Install Serverpod CLI
+      - name: Install Serverpod CLI
+        run: dart pub global activate serverpod_cli
+
+      # Generate Serverpod client code
+      - name: Generate Serverpod client code
+        run: serverpod generate
+        working-directory: server
+
+      # Install Flutter dependencies
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: chat
+
+      # Build iOS app
+      - name: Build iOS (production)
+        run: |
+          flutter build ios --release --no-codesign \
+            --dart-define=ENV=production \
+            --dart-define=SERVERPOD_HOST=${{ secrets.PROD_SERVERPOD_HOST }} \
+            --dart-define=SERVERPOD_PORT=${{ secrets.PROD_SERVERPOD_PORT }}
+        working-directory: chat
+
+      # TODO: Add code signing and TestFlight upload
+      # - name: Archive and upload to TestFlight
+      #   run: |
+      #     xcodebuild -workspace ios/Runner.xcworkspace \
+      #       -scheme Runner -configuration Release \
+      #       -archivePath build/Runner.xcarchive archive
+      #     xcodebuild -exportArchive \
+      #       -archivePath build/Runner.xcarchive \
+      #       -exportPath build/Runner.ipa \
+      #       -exportOptionsPlist ios/ExportOptions.plist
+
+  deploy_android:
+    runs-on: ubuntu-latest
+    needs: [deploy_backend, build_android]
+    environment: production
+
+    steps:
+      - name: Download App Bundle artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: production-aab
+
+      # TODO: Deploy to Google Play Store
+      # - name: Deploy to Google Play
+      #   uses: r0adkll/upload-google-play@v1
+      #   with:
+      #     serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT }}
+      #     packageName: com.yourcompany.chat
+      #     releaseFiles: app-release.aab
+      #     track: production
+      #     status: completed
+      - name: Deploy Android to production
+        run: |
+          echo "App Bundle ready for deployment: app-release.aab"
+          echo "Configure Google Play Store deployment in this step"
+
+  deploy_ios:
+    runs-on: ubuntu-latest
+    needs: [deploy_backend, build_ios]
+    environment: production
+
+    steps:
+      # TODO: Deploy to App Store
+      - name: Deploy iOS to production
+        run: |
+          echo "iOS app ready for deployment"
+          echo "Configure App Store Connect deployment in this step"

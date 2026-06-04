@@ -1,42 +1,99 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
+# Serverpod Backend CI Pipeline
+# Runs tests, analysis, and code generation for the Serverpod backend
 
-name: Dart
+name: Serverpod Backend CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "develop" ]
+    paths:
+      - 'server/**'
+      - 'docs/protocol/**'
+      - '.github/workflows/dart.yml'
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "develop" ]
+    paths:
+      - 'server/**'
+      - 'docs/protocol/**'
 
 jobs:
-  build:
+  serverpod_backend:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: chat_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
 
     steps:
       - uses: actions/checkout@v4
 
-      # Note: This workflow uses the latest stable version of the Dart SDK.
-      # You can specify other versions if desired, see documentation here:
-      # https://github.com/dart-lang/setup-dart/blob/main/README.md
-      # - uses: dart-lang/setup-dart@v1
-      - uses: dart-lang/setup-dart@9a04e6d73cca37bd455e0608d7e5092f881fd603
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
 
-      - name: Install dependencies
+      # Install Serverpod CLI
+      - name: Install Serverpod CLI
+        run: dart pub global activate serverpod_cli
+
+      # Server dependencies
+      - name: Install server dependencies
         run: dart pub get
+        working-directory: server/chat_server
 
-      # Uncomment this step to verify the use of 'dart format' on each commit.
-      # - name: Verify formatting
-      #   run: dart format --output=none --set-exit-if-changed .
+      # Client dependencies
+      - name: Install client dependencies
+        run: dart pub get
+        working-directory: server/chat_client
 
-      # Consider passing '--fatal-infos' for slightly stricter analysis.
-      - name: Analyze project source
-        run: dart analyze
+      # Generate Serverpod code
+      - name: Generate Serverpod code
+        run: serverpod generate
+        working-directory: server
 
-      # Your project will need to have tests in test/ and a dependency on
-      # package:test for this step to succeed. Note that Flutter projects will
-      # want to change this to 'flutter test'.
-      - name: Run tests
+      # Verify generated code is up to date
+      - name: Check for uncommitted generated code
+        run: |
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "Error: Generated code is out of date. Run 'serverpod generate' locally and commit changes."
+            git status
+            git diff
+            exit 1
+          fi
+
+      # Analyze server code
+      - name: Analyze server code
+        run: dart analyze --fatal-infos
+        working-directory: server/chat_server
+
+      # Analyze client code
+      - name: Analyze client code
+        run: dart analyze --fatal-infos
+        working-directory: server/chat_client
+
+      # Run server tests
+      - name: Run server tests
         run: dart test
+        working-directory: server/chat_server
+        env:
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_NAME: chat_test
+          DATABASE_USER: postgres
+          DATABASE_PASSWORD: postgres
+
+      # Run client tests
+      - name: Run client tests
+        run: dart test
+        working-directory: server/chat_client

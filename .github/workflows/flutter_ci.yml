@@ -1,0 +1,74 @@
+name: Flutter CI
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+    paths:
+      - 'chat/**'
+      - 'server/chat_client/**'
+      - '.github/workflows/flutter_ci.yml'
+  pull_request:
+    branches: [ "main", "develop" ]
+    paths:
+      - 'chat/**'
+      - 'server/chat_client/**'
+
+jobs:
+  flutter_ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      # Install Serverpod CLI for code generation
+      - name: Install Serverpod CLI
+        run: dart pub global activate serverpod_cli
+
+      # Generate Serverpod client code
+      - name: Generate Serverpod client code
+        run: serverpod generate
+        working-directory: server
+
+      # Install Flutter dependencies
+      - name: Install dependencies
+        run: flutter pub get
+        working-directory: chat
+
+      # Verify generated code is up to date
+      - name: Check for uncommitted generated code
+        run: |
+          if [[ -n $(git status --porcelain server/chat_client/) ]]; then
+            echo "Error: Serverpod client code is out of date. Run 'serverpod generate' locally and commit changes."
+            git status server/chat_client/
+            git diff server/chat_client/
+            exit 1
+          fi
+
+      # Analyze Flutter code
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+        working-directory: chat
+
+      # Run Flutter tests
+      - name: Run tests
+        run: flutter test --coverage
+        working-directory: chat
+
+      # Upload coverage report
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./chat/coverage/lcov.info
+          flags: flutter
+          name: flutter-coverage
+        continue-on-error: true
