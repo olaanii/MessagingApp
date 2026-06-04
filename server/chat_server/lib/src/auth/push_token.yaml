@@ -1,0 +1,16 @@
+# User push token registration (ADR-0003).
+class: PushToken
+table: push_tokens
+fields:
+  authUserId: UuidValue
+  deviceId: String
+  token: String
+  platform: String
+  updatedAt: DateTime, default=now
+indexes:
+  auth_user_device:
+    fields: [authUserId, deviceId]
+    unique: true
+  token_idx:
+    fields: [token]
+    unique: true

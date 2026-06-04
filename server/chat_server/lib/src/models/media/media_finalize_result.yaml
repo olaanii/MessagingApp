@@ -1,0 +1,5 @@
+### Returned after server verifies on-disk size; use [fetchUrl] in message attachments.
+class: MediaFinalizeResult
+fields:
+  mediaId: String
+  fetchUrl: String

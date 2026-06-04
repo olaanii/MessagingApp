@@ -1,0 +1,10 @@
+name: messaging_server_workspace
+description: Consolidated Serverpod server + generated client for MessagingApp.
+publish_to: none
+
+environment:
+  sdk: '>=3.8.0 <4.0.0'
+
+workspace:
+  - chat_client
+  - chat_server

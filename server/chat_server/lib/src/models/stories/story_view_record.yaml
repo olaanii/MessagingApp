@@ -1,0 +1,13 @@
+### Story view record (who viewed which story).
+class: StoryViewRecord
+table: story_view
+fields:
+  id: UuidValue?, defaultPersist=random_v7
+  storyId: UuidValue
+  viewerAuthUserId: UuidValue
+  viewedAt: DateTime, defaultModel=now
+indexes:
+  story_view_unique:
+    fields: storyId, viewerAuthUserId
+  story_view_story:
+    fields: storyId

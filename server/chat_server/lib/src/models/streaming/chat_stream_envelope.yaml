@@ -1,0 +1,19 @@
+# Realtime envelope — ADR-0004 (type, idempotencyKey, deviceId, chatId, ts, payload).
+# Run `serverpod generate` from chat_server after changes.
+
+class: ChatStreamEnvelope
+
+fields:
+  ### Event name: send_message | message | message_ack | typing | presence | sync_hint | error
+  type: String
+  idempotencyKey: String?
+  deviceId: String
+  chatId: String?
+  ts: DateTime?
+  ### Opaque JSON string for event-specific fields (e.g. ciphertext handles).
+  payloadJson: String?
+  errorCode: String?
+  errorMessage: String?
+  requestId: String?
+  serverSeq: int?
+  messageId: String?

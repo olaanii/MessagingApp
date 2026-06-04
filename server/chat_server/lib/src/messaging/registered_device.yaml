@@ -1,0 +1,10 @@
+# deviceId = client stable UUID string (ADR-0003). Surrogate int id is automatic.
+class: RegisteredDevice
+table: registered_device
+fields:
+  deviceId: String
+  ownerAuthUserId: String
+  platform: String
+  name: String?
+  createdAt: DateTime, default=now
+  lastSeenAt: DateTime?, default=now

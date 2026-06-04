@@ -1,0 +1,9 @@
+class: ChatThread
+table: chat_thread
+fields:
+  id: UuidValue, defaultModel=random
+  type: String
+  title: String?
+  createdByAuthUserId: UuidValue?
+  createdAt: DateTime, default=now
+  updatedAt: DateTime, default=now

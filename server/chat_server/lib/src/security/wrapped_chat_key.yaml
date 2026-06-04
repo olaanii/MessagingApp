@@ -1,0 +1,12 @@
+# Wrapped chat keys for E2EE member bootstrap (ADR-0002).
+class: WrappedChatKey
+table: wrapped_chat_keys
+fields:
+  chatId: String
+  recipientAuthUserId: UuidValue
+  envelopeJson: String
+  createdAt: DateTime, default=now
+indexes:
+  chat_recipient:
+    fields: [chatId, recipientAuthUserId]
+    unique: true

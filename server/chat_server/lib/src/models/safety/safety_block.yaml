@@ -1,0 +1,12 @@
+### Block list: blocker cannot receive social graph delivery from blocked (enforce in fan-out). ADR-0007.
+class: SafetyBlock
+table: safety_block
+fields:
+  id: UuidValue?, defaultPersist=random_v7
+  blockerAuthUserId: UuidValue
+  blockedAuthUserId: UuidValue
+  createdAt: DateTime, defaultModel=now
+indexes:
+  safety_block_pair_unique:
+    fields: blockerAuthUserId, blockedAuthUserId
+    unique: true

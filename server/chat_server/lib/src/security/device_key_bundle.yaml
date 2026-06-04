@@ -1,0 +1,14 @@
+# E2EE key distribution bundles (ADR-0002).
+class: DeviceKeyBundle
+table: device_keys
+fields:
+  authUserId: UuidValue
+  deviceId: String
+  bundleJson: String
+  createdAt: DateTime, default=now
+indexes:
+  auth_user_device:
+    fields: [authUserId, deviceId]
+    unique: true
+  auth_user_idx:
+    fields: [authUserId]

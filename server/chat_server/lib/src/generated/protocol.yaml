@@ -1,0 +1,67 @@
+device:
+  - list:
+  - revoke:
+  - registerDevice:
+emailIdp:
+  - login:
+  - startRegistration:
+  - startPasswordReset:
+  - verifyRegistrationCode:
+  - finishRegistration:
+  - verifyPasswordResetCode:
+  - finishPasswordReset:
+  - hasAccount:
+firebaseAuth:
+  - login:
+  - hasAccount:
+jwtRefresh:
+  - refreshAccessToken:
+push:
+  - registerToken:
+throttledEmailIdp:
+  - login:
+  - startRegistration:
+  - startPasswordReset:
+  - verifyRegistrationCode:
+  - finishRegistration:
+  - verifyPasswordResetCode:
+  - finishPasswordReset:
+  - hasAccount:
+call:
+  - initiateCall:
+  - answerCall:
+  - rejectCall:
+  - sendIceCandidate:
+  - endCall:
+greeting:
+  - hello:
+media:
+  - requestUpload:
+  - finalizeUpload:
+chat:
+  - openDirectChat:
+  - createGroupChat:
+  - getChatDetails:
+  - addGroupMembers:
+  - removeGroupMember:
+  - listMyChats:
+safety:
+  - submitReport:
+  - blockUser:
+  - unblockUser:
+key:
+  - uploadBundle:
+  - fetchUserBundle:
+  - uploadWrappedKeys:
+story:
+  - createStory:
+  - listStories:
+  - viewStory:
+  - getViewers:
+  - deleteStory:
+  - cleanupExpired:
+chatStream:
+  - chatRoom:
+sync:
+  - getChanges:
+  - getChatChanges:

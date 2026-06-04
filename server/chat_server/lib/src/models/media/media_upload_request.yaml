@@ -1,0 +1,7 @@
+### Client wants to upload a compressed blob; server validates MIME/size and returns a slot.
+class: MediaUploadRequest
+fields:
+  fileName: String
+  mimeType: String
+  byteLength: int
+  chatId: String?

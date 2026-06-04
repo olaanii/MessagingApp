@@ -1,0 +1,13 @@
+# Local mapping of Firebase UID to Serverpod Auth ID (ADR-0003).
+class: FirebaseAuthUser
+table: firebase_auth_user
+fields:
+  firebaseUid: String
+  authUserId: UuidValue
+indexes:
+  firebase_uid:
+    fields: [firebaseUid]
+    unique: true
+  auth_user_id:
+    fields: [authUserId]
+    unique: true

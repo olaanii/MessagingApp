@@ -1,0 +1,5 @@
+# RPC response only (no table).
+class: MessageSyncPage
+fields:
+  items: List<ChatMessage>
+  nextCursor: String?

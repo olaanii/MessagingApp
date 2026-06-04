@@ -1,0 +1,19 @@
+### Ephemeral story / post (encrypted content; 24 h TTL per ADR-0002).
+class: Story
+table: story
+fields:
+  id: UuidValue, defaultModel=random
+  authorAuthUserId: UuidValue
+  mediaType: String
+  encryptedPayload: String
+  nonce: String
+  thumbnailCiphertext: String?
+  privacy: String
+  selectedViewerIds: String?
+  expiresAt: DateTime, default=now
+  createdAt: DateTime, defaultModel=now
+indexes:
+  story_author_time:
+    fields: authorAuthUserId, createdAt
+  story_expires_at:
+    fields: expiresAt

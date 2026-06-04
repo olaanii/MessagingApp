@@ -1,0 +1,10 @@
+### Presign-style slot: PUT binary to [uploadUrl] with optional chunked headers.
+class: MediaUploadSlot
+fields:
+  mediaId: String
+  uploadUrl: String
+  expiresAt: DateTime
+  maxBytes: int
+  chunkSizeBytes: int
+  allowedMimeTypes: List<String>
+  finalizeToken: String

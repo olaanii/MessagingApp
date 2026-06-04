@@ -1,0 +1,8 @@
+class: ChatMemberRow
+table: chat_member
+fields:
+  chatId: UuidValue
+  memberAuthUserId: UuidValue
+  role: String
+  joinedAt: DateTime, default=now
+  lastReadSeq: int, default=0
