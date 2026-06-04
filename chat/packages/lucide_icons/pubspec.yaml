@@ -1,0 +1,13 @@
+name: lucide_icons
+description: Compatibility wrapper for Lucide icons used by the app.
+publish_to: 'none'
+version: 0.0.1
+
+environment:
+  sdk: ^3.11.0
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  lucide_icons_flutter: ^3.1.14+2
