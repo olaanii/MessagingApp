@@ -108,6 +108,27 @@ final class _FakeSyncRepository implements SyncRepository {
   @override
   Future<void> setCursor(String scopeKey, String? cursor, {DateTime? at}) async {}
 
+  @override
+  Future<void> upsertPendingMedia({
+    required String id,
+    required String chatId,
+    required String localPath,
+    required int bytesUploaded,
+    int? totalBytes,
+    String state = 'pending',
+  }) async {}
+
+  @override
+  Future<void> updatePendingMediaProgress({
+    required String id,
+    required int bytesUploaded,
+    int? totalBytes,
+    String? state,
+  }) async {}
+
+  @override
+  Future<void> deletePendingMedia(String id) async {}
+
   void close() => _controller.close();
 }
 

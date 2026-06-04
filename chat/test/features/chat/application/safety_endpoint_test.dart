@@ -8,6 +8,7 @@ import 'package:chat/data/repositories/message_repository.dart';
 import 'package:chat/data/repositories/sync_repository.dart';
 import 'package:chat/domain/models/message_model.dart';
 import 'package:chat/features/chat/application/chat_notifier.dart';
+import 'package:chat/features/chat/application/messaging_sync_mode_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -137,6 +138,27 @@ final class _FakeSyncRepository implements SyncRepository {
     String? cursor, {
     DateTime? at,
   }) async {}
+
+  @override
+  Future<void> upsertPendingMedia({
+    required String id,
+    required String chatId,
+    required String localPath,
+    required int bytesUploaded,
+    int? totalBytes,
+    String state = 'pending',
+  }) async {}
+
+  @override
+  Future<void> updatePendingMediaProgress({
+    required String id,
+    required int bytesUploaded,
+    int? totalBytes,
+    String? state,
+  }) async {}
+
+  @override
+  Future<void> deletePendingMedia(String id) async {}
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

@@ -52,10 +52,9 @@ final _testServerpodClientProvider = Provider<Client>((ref) {
   final manager = ref.watch(_testAuthKeyManagerProvider);
   final client = Client(
     'http://localhost:8080/',
-    // ignore: deprecated_member_use
-    authenticationKeyManager: manager,
     disconnectStreamsOnLostInternetConnection: true, // Requirement 1.6
   );
+  client.authKeyProvider = manager;
   ref.onDispose(client.close);
   return client;
 });

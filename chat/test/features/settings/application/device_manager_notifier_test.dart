@@ -13,12 +13,10 @@ final class _FakeDeviceRepository implements DeviceRepository {
   _FakeDeviceRepository({
     this.devicesToReturn = const [],
     this.throwOnList = false,
-    this.throwOnRevoke = false,
   });
 
   final List<DeviceInfo> devicesToReturn;
   final bool throwOnList;
-  final bool throwOnRevoke;
 
   int listCallCount = 0;
   int revokeCallCount = 0;
@@ -35,7 +33,6 @@ final class _FakeDeviceRepository implements DeviceRepository {
   Future<void> revokeDevice(String deviceId) async {
     revokeCallCount++;
     lastRevokedDeviceId = deviceId;
-    if (throwOnRevoke) throw Exception('revoke failed');
   }
 }
 
@@ -142,7 +139,7 @@ void main() {
       // Listen to force the provider to build and wait for it to settle.
       r1.container.listen(
         deviceManagerNotifierProvider,
-        (_, __) {},
+        (_, _) {},
         fireImmediately: true,
       );
 
@@ -169,7 +166,7 @@ void main() {
       // Listen to force the provider to build.
       r2.container.listen(
         deviceManagerNotifierProvider,
-        (_, __) {},
+        (_, _) {},
         fireImmediately: true,
       );
 

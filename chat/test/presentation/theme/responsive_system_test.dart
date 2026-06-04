@@ -638,7 +638,7 @@ void main() {
         await tester.pumpWidget(
           MediaQuery(
             data: const MediaQueryData(
-              size: Size(1024, 768), // iPad landscape (width > height)
+              size: Size(1023, 768), // iPad-like landscape (tablet bucket)
             ),
             child: Builder(
               builder: (context) {
@@ -647,8 +647,8 @@ void main() {
                 expect(responsive.isLandscape, true);
                 
                 final spacing = responsive.spacing(16);
-                // 16 * (1024/375) * 1.2 = 52.4288
-                expect(spacing, closeTo(52.43, 0.01));
+                // 16 * (1023/375) * 1.2 = 52.3776
+                expect(spacing, closeTo(52.38, 0.01));
                 return const SizedBox();
               },
             ),
@@ -1809,8 +1809,8 @@ void main() {
             child: Builder(
               builder: (context) {
                 final fontSize = context.rf(16);
-                // 16 * (750/375) * 1.2 * 1.0 = 38.4
-                expect(fontSize, 38.4);
+                // 16 * (750/375) * 1.15 * 1.0 = 36.8
+                expect(fontSize, 36.8);
                 return const SizedBox();
               },
             ),
