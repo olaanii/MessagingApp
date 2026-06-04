@@ -9,9 +9,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/platform/fcm_background_handler.dart';
 import 'core/platform/fcm_platform_service.dart';
+import 'core/device/device_id_service.dart';
+import 'core/serverpod/serverpod_client_provider.dart';
+import 'core/sync/messaging_backend.dart';
 import 'data/services/fcm_token_sync.dart';
 import 'firebase_options.dart';
 import 'presentation/auth/auth_provider.dart';
+import 'features/chat/application/connectivity_sync_notifier.dart';
 import 'presentation/onboarding/onboarding_holder.dart';
 import 'presentation/providers/app_providers.dart';
 import 'presentation/providers/go_router_provider.dart';
@@ -130,15 +134,30 @@ class _MessagingAppState extends ConsumerState<MessagingApp> {
     }
 
     final router = ref.watch(goRouterProvider);
+    ref.watch(connectivitySyncNotifierProvider);
 
     if (widget.isFirebaseInitialized) {
       _push ??= FcmPlatformService(
         router: router,
         isAuthenticated: () => ref.read(authNotifierProvider).isAuthenticated,
-        publishToken: (userId, token) => syncFcmTokenToFirestore(
-          userId: userId,
-          token: token,
-        ),
+        publishToken: (userId, token) async {
+          final deviceId = await ref.read(deviceIdServiceProvider).getDeviceId();
+          final client = ref.read(serverpodClientProvider);
+          await syncFcmToken(
+            userId: userId,
+            deviceId: deviceId,
+            token: token,
+            mode: MessagingSyncMode(backend: MessagingBackend.firestore),
+          );
+          await syncFcmToken(
+            userId: userId,
+            deviceId: deviceId,
+            token: token,
+            mode: MessagingSyncMode(backend: MessagingBackend.serverpod),
+            serverpodRegister: (uid, did, tok, platform) =>
+                client.push.registerToken(uid, did, tok, platform),
+          );
+        },
       );
     }
 

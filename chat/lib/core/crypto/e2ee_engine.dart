@@ -154,6 +154,29 @@ final class E2eeEngine {
     return await _aead.newSecretKeyFromBytes(keyBytes);
   }
 
+  /// Encrypt content for a recipient device.
+  /// (Placeholder/MVP implementation for non-chat message encryption)
+  Future<String> encrypt({
+    required String plaintext,
+    required String recipientDeviceId,
+  }) async {
+    // Basic mock encryption using base64 for compilation & placeholder completeness
+    return base64Encode(utf8.encode(plaintext));
+  }
+
+  /// Decrypt content from a sender device.
+  /// (Placeholder/MVP implementation for non-chat message decryption)
+  Future<String> decrypt({
+    required String ciphertext,
+    required String senderDeviceId,
+  }) async {
+    try {
+      return utf8.decode(base64Decode(ciphertext));
+    } catch (_) {
+      return ciphertext;
+    }
+  }
+
   Uint8List _packSecretBox(SecretBox box) {
     final macBytes = box.mac.bytes;
     final out = Uint8List(box.cipherText.length + macBytes.length);

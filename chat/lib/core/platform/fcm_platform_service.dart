@@ -34,13 +34,16 @@ import 'fcm_message_payload.dart';
 /// ```dart
 /// FcmPlatformService(
 ///   router: router,
-///   publishToken: (userId, token) => syncFcmToken(
+///   publishToken: (userId, token) async {
+///     final deviceId = await ref.read(deviceIdServiceProvider).getDeviceId();
+///     return syncFcmToken(
 ///     userId: userId,
+///     deviceId: deviceId,
 ///     token: token,
 ///     mode: MessagingSyncMode(),
-///     serverpodRegister: (uid, tok, platform) =>
-///         client.push.registerToken(uid, tok, platform),
-///   ),
+///     serverpodRegister: (uid, did, tok, platform) =>
+///         client.push.registerToken(uid, did, tok, platform),
+///   },
 ///   isAuthenticated: () => authNotifier.isAuthenticated,
 /// )
 /// ```

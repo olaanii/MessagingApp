@@ -1,20 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/crypto/e2ee_engine.dart';
+import '../../../core/device/device_id_service.dart';
 import '../../../core/serverpod/serverpod_client_provider.dart';
 import '../../../data/providers/repository_providers.dart';
-import '../../auth/application/auth_notifier.dart';
+import '../../../presentation/providers/app_providers.dart';
 import '../data/chat_key_store.dart';
 import '../data/outbox_sync_worker.dart';
-
-// ── ChatKeyStore provider ─────────────────────────────────────────────────────
-
-/// Provides the [ChatKeyStore] singleton backed by flutter_secure_storage.
-///
-/// Overridable in tests.
-final chatKeyStoreProvider = Provider<ChatKeyStore>((ref) {
-  return FlutterSecureStorageChatKeyStore();
-});
 
 // ── OutboxWorkerNotifier ──────────────────────────────────────────────────────
 
@@ -32,29 +24,35 @@ class OutboxWorkerNotifier extends Notifier<void> {
     final client = ref.watch(serverpodClientProvider);
     final keyStore = ref.watch(chatKeyStoreProvider);
 
+    final deviceIdAsync = ref.watch(deviceIdFutureProvider);
+    final deviceId = deviceIdAsync.asData?.value ?? 'local_device';
+
     _worker = OutboxSyncWorker(
       syncRepo: syncRepo,
       messageRepo: messageRepo,
       openChatRoom: client.chatStream.chatRoom,
       crypto: E2eeEngine(),
       keyStore: keyStore,
-      deviceId: 'local_device', // TODO: replace with stable device ID (task 3.1)
+      deviceId: deviceId,
     );
 
-    // Watch auth state and start/pause accordingly.
-    final authState = ref.watch(authNotifierV2Provider);
-    authState.whenData((state) {
-      if (state is AuthStateAuthenticated) {
-        _worker?.start();
-      } else {
-        _worker?.pause();
-      }
-    });
+    final auth = ref.watch(authNotifierProvider);
+    if (auth.isAuthenticated) {
+      _worker?.start();
+    } else {
+      _worker?.pause();
+    }
 
     ref.onDispose(() {
       _worker?.dispose();
       _worker = null;
     });
+  }
+
+  /// Re-subscribes the worker to the outbox stream so pending retries can be
+  /// retried immediately after connectivity is restored.
+  Future<void> refreshPendingEntries() async {
+    await _worker?.refresh();
   }
 }
 

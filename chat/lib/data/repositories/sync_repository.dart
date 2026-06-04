@@ -34,6 +34,24 @@ abstract class SyncRepository {
     String operation = 'sendMessage',
   });
 
+  Future<void> upsertPendingMedia({
+    required String id,
+    required String chatId,
+    required String localPath,
+    required int bytesUploaded,
+    int? totalBytes,
+    String state = 'pending',
+  });
+
+  Future<void> updatePendingMediaProgress({
+    required String id,
+    required int bytesUploaded,
+    int? totalBytes,
+    String? state,
+  });
+
+  Future<void> deletePendingMedia(String id);
+
   Stream<List<OutboxItem>> watchOutbox({Iterable<String>? states});
 
   Future<void> updateOutboxEntry({

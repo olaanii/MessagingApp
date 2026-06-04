@@ -1,5 +1,14 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+
+/// Provides the [DeviceIdService] singleton.
+final deviceIdServiceProvider = Provider<DeviceIdService>((ref) => DeviceIdService());
+
+/// Provides the device ID as an async value (loads from SharedPreferences).
+final deviceIdFutureProvider = FutureProvider<String>((ref) {
+  return ref.watch(deviceIdServiceProvider).getDeviceId();
+});
 
 /// Service for managing a stable device identifier.
 ///

@@ -22,8 +22,8 @@ Future<void> syncFcmTokenToFirestore({
 /// based on [mode].
 ///
 /// - [MessagingBackend.firestore]: writes to Firestore via [syncFcmTokenToFirestore].
-/// - [MessagingBackend.serverpod]: calls [serverpodRegister] with the resolved
-///   platform string (`'android'`, `'ios'`, or `'web'`).
+/// - [MessagingBackend.serverpod]: calls [serverpodRegister] with the stable
+///   device ID and resolved platform string (`'android'`, `'ios'`, or `'web'`).
 /// - Dual-write (both active): calls both paths.
 ///
 /// [serverpodRegister] is injected by the caller so this function does not
@@ -32,9 +32,15 @@ Future<void> syncFcmTokenToFirestore({
 /// Requirements: 9.1, 9.2, 9.3, 9.4
 Future<void> syncFcmToken({
   required String userId,
+  required String deviceId,
   required String token,
   required MessagingSyncMode mode,
-  Future<void> Function(String userId, String token, String platform)?
+  Future<void> Function(
+    String userId,
+    String deviceId,
+    String token,
+    String platform,
+  )?
       serverpodRegister,
 }) async {
   final platform = _resolvePlatform();
@@ -45,7 +51,7 @@ Future<void> syncFcmToken({
 
   if (mode.useServerpod) {
     if (serverpodRegister != null) {
-      await serverpodRegister(userId, token, platform);
+      await serverpodRegister(userId, deviceId, token, platform);
     }
   }
 }

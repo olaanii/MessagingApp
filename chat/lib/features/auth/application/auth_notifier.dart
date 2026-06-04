@@ -1,9 +1,14 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../../../core/crypto/e2ee_identity_store.dart';
+import '../../../core/device/device_id_service.dart';
 import '../../../core/serverpod/serverpod_auth_key_manager.dart';
 import '../../../core/serverpod/serverpod_client_provider.dart';
 import '../../../core/sync/messaging_backend.dart';
@@ -21,6 +26,11 @@ sealed class AuthState {
 /// No user is signed in.
 final class AuthStateUnauthenticated extends AuthState {
   const AuthStateUnauthenticated();
+}
+
+/// OTP has been sent, waiting for user to enter code.
+final class AuthStateCodeSent extends AuthState {
+  const AuthStateCodeSent();
 }
 
 /// Sign-in is in progress (OTP send or verify).
@@ -47,6 +57,11 @@ final class AuthStateError extends AuthState {
 /// Overridable in tests.
 final serverpodAuthKeyManagerProvider = Provider<ServerpodAuthKeyManager>(
   (ref) => ServerpodAuthKeyManager(const FlutterSecureStorage()),
+);
+
+/// Provides the [E2eeIdentityStore] singleton.
+final e2eeIdentityStoreProvider = Provider<E2eeIdentityStore>(
+  (ref) => E2eeIdentityStore(),
 );
 
 /// Provides the [ServerpodAuthRepository] singleton.
@@ -148,7 +163,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     await _authService.sendOtp(
       phoneNumber: phoneNumber,
       onCodeSent: (_) {
-        state = const AsyncData(AuthStateLoading());
+        state = const AsyncData(AuthStateCodeSent());
       },
       onError: (msg) {
         state = AsyncData(AuthStateError(msg));
@@ -159,7 +174,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   /// Verify OTP and sign in.
   ///
   /// On success with [MessagingSyncMode.useServerpod]: also calls
-  /// [ServerpodAuthRepository.exchangeFirebaseToken] (Requirement 2.1).
+  /// [ServerpodAuthRepository.exchangeFirebaseToken] then registers the device
+  /// and uploads the public key bundle (Requirements 2.1, 8.1, 1.4).
   Future<bool> verifyOtp(String smsCode) async {
     state = const AsyncLoading();
     try {
@@ -168,11 +184,81 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         state = const AsyncData(AuthStateError('Sign-in failed'));
         return false;
       }
+
+      if (_syncMode.useServerpod) {
+        await _postSignInServerpodFlow();
+      }
+
       state = AsyncData(AuthStateAuthenticated(userModel));
       return true;
     } catch (e) {
       state = AsyncData(AuthStateError(e.toString()));
       return false;
+    }
+  }
+
+  /// Update the authenticated user's profile information.
+  Future<void> updateProfile({required String name, String? status}) async {
+    state = const AsyncLoading();
+    try {
+      final current = currentUser;
+      if (current == null) {
+        state = const AsyncData(AuthStateUnauthenticated());
+        return;
+      }
+
+      final updatedUser = current.copyWith(
+        name: name,
+        status: status ?? current.status,
+      );
+      await _authService.updateUser(updatedUser);
+      state = AsyncData(AuthStateAuthenticated(updatedUser));
+    } catch (e) {
+      state = AsyncData(AuthStateError(e.toString()));
+    }
+  }
+
+  /// Exchange Firebase token, register device, and upload key bundle.
+  Future<void> _postSignInServerpodFlow() async {
+    try {
+      final firebaseUser = FirebaseAuth.instance.currentUser;
+      if (firebaseUser == null) return;
+
+      final idToken = await firebaseUser.getIdToken();
+      if (idToken == null) return;
+
+      final deviceIdSvc = ref.read(deviceIdServiceProvider);
+      final deviceId = await deviceIdSvc.getDeviceId();
+
+      final identityStore = ref.read(e2eeIdentityStoreProvider);
+      final identity = await identityStore.loadOrCreateIdentity();
+      final publicBundle = identityStore.publicBundleFor(identity);
+
+      final authRepo = ref.read(serverpodAuthRepositoryProvider);
+      await authRepo.exchangeFirebaseToken(
+        firebaseIdToken: idToken,
+        deviceId: deviceId,
+        publicKeyBundle: publicBundle,
+      );
+
+      final client = ref.read(serverpodClientProvider);
+      final platform = Platform.isAndroid
+          ? 'android'
+          : Platform.isIOS
+              ? 'ios'
+              : 'other';
+      await client.device.registerDevice(deviceId, platform, null);
+
+      await client.key.uploadBundle(
+        deviceId,
+        jsonEncode({
+          'v': 1,
+          'x25519': base64Encode(publicBundle.x25519Public),
+        }),
+      );
+    } catch (e) {
+      // Non-fatal: local auth succeeded; Serverpod flow will retry on next launch.
+      debugPrint('[AuthNotifier] Serverpod post-sign-in flow failed: $e');
     }
   }
 

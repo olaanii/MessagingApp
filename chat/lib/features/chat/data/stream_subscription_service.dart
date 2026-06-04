@@ -56,6 +56,85 @@ final class TypingEvent extends InboundChatEvent {
   final String chatId;
 }
 
+/// Incoming call invitation from another participant.
+final class CallOfferEvent extends InboundChatEvent {
+  CallOfferEvent({
+    required this.callId,
+    required this.chatId,
+    required this.callerId,
+    required this.calleeId,
+    required this.callType,
+    required this.sdpOfferJson,
+  });
+
+  final String callId;
+  final String chatId;
+  final String callerId;
+  final String calleeId;
+  final String callType;
+  final String sdpOfferJson;
+}
+
+/// Call accepted by the callee.
+final class CallAnsweredEvent extends InboundChatEvent {
+  CallAnsweredEvent({
+    required this.callId,
+    required this.chatId,
+    required this.answererId,
+    required this.sdpAnswerJson,
+  });
+
+  final String callId;
+  final String chatId;
+  final String answererId;
+  final String sdpAnswerJson;
+}
+
+/// Call rejected by the recipient.
+final class CallRejectedEvent extends InboundChatEvent {
+  CallRejectedEvent({
+    required this.callId,
+    required this.chatId,
+    required this.rejecterId,
+    required this.reason,
+  });
+
+  final String callId;
+  final String chatId;
+  final String rejecterId;
+  final String reason;
+}
+
+/// ICE candidate relay for WebRTC negotiation.
+final class IceCandidateEvent extends InboundChatEvent {
+  IceCandidateEvent({
+    required this.callId,
+    required this.chatId,
+    required this.senderId,
+    required this.candidateJson,
+  });
+
+  final String callId;
+  final String chatId;
+  final String senderId;
+  final String candidateJson;
+}
+
+/// Remote hangup / call termination.
+final class CallEndedEvent extends InboundChatEvent {
+  CallEndedEvent({
+    required this.callId,
+    required this.chatId,
+    required this.endedById,
+    required this.reason,
+  });
+
+  final String callId;
+  final String chatId;
+  final String endedById;
+  final String reason;
+}
+
 /// An error or decryption failure on an inbound envelope.
 final class ErrorEvent extends InboundChatEvent {
   ErrorEvent({required this.code, required this.message});
@@ -245,6 +324,16 @@ final class StreamSubscriptionServiceImpl implements ChatStreamService {
         _handleAck(envelope, sink);
       case 'typing':
         _handleTyping(envelope, sink);
+      case 'call_offer':
+        _handleCallOffer(envelope, sink);
+      case 'call_answered':
+        _handleCallAnswered(envelope, sink);
+      case 'call_rejected':
+        _handleCallRejected(envelope, sink);
+      case 'ice_candidate':
+        _handleIceCandidate(envelope, sink);
+      case 'call_ended':
+        _handleCallEnded(envelope, sink);
       case 'error':
         sink.add(ErrorEvent(
           code: envelope.errorCode ?? 'unknown',
@@ -341,6 +430,73 @@ final class StreamSubscriptionServiceImpl implements ChatStreamService {
     ));
   }
 
+  void _handleCallOffer(
+    ChatStreamEnvelope envelope,
+    StreamController<InboundChatEvent> sink,
+  ) {
+    final payload = _parseEventPayload(envelope.payloadJson);
+    sink.add(CallOfferEvent(
+      callId: payload['callId'] as String? ?? '',
+      chatId: envelope.chatId ?? '',
+      callerId: payload['callerId'] as String? ?? '',
+      calleeId: payload['calleeId'] as String? ?? '',
+      callType: payload['callType'] as String? ?? 'voice',
+      sdpOfferJson: payload['sdpOfferJson'] as String? ?? '',
+    ));
+  }
+
+  void _handleCallAnswered(
+    ChatStreamEnvelope envelope,
+    StreamController<InboundChatEvent> sink,
+  ) {
+    final payload = _parseEventPayload(envelope.payloadJson);
+    sink.add(CallAnsweredEvent(
+      callId: payload['callId'] as String? ?? '',
+      chatId: envelope.chatId ?? '',
+      answererId: payload['answererId'] as String? ?? '',
+      sdpAnswerJson: payload['sdpAnswerJson'] as String? ?? '',
+    ));
+  }
+
+  void _handleCallRejected(
+    ChatStreamEnvelope envelope,
+    StreamController<InboundChatEvent> sink,
+  ) {
+    final payload = _parseEventPayload(envelope.payloadJson);
+    sink.add(CallRejectedEvent(
+      callId: payload['callId'] as String? ?? '',
+      chatId: envelope.chatId ?? '',
+      rejecterId: payload['rejecterId'] as String? ?? '',
+      reason: payload['reason'] as String? ?? '',
+    ));
+  }
+
+  void _handleIceCandidate(
+    ChatStreamEnvelope envelope,
+    StreamController<InboundChatEvent> sink,
+  ) {
+    final payload = _parseEventPayload(envelope.payloadJson);
+    sink.add(IceCandidateEvent(
+      callId: payload['callId'] as String? ?? '',
+      chatId: envelope.chatId ?? '',
+      senderId: payload['senderId'] as String? ?? '',
+      candidateJson: payload['candidateJson'] as String? ?? '',
+    ));
+  }
+
+  void _handleCallEnded(
+    ChatStreamEnvelope envelope,
+    StreamController<InboundChatEvent> sink,
+  ) {
+    final payload = _parseEventPayload(envelope.payloadJson);
+    sink.add(CallEndedEvent(
+      callId: payload['callId'] as String? ?? '',
+      chatId: envelope.chatId ?? '',
+      endedById: payload['endedById'] as String? ?? '',
+      reason: payload['reason'] as String? ?? '',
+    ));
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   String? _extractErrorCode(Object error) {
@@ -359,6 +515,17 @@ final class StreamSubscriptionServiceImpl implements ChatStreamService {
       nonce: base64Decode(map['n'] as String),
       ciphertextWithMac: base64Decode(map['c'] as String),
     );
+  }
+
+  Map<String, dynamic> _parseEventPayload(String? payloadJson) {
+    if (payloadJson == null || payloadJson.isEmpty) {
+      return const <String, dynamic>{};
+    }
+    final decoded = jsonDecode(payloadJson);
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+    return const <String, dynamic>{};
   }
 
   @override

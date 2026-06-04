@@ -9,6 +9,7 @@ import '../../domain/models/message_model.dart';
 import '../core/async_state_widgets.dart';
 import '../core/shadow_background.dart';
 import '../providers/app_providers.dart';
+import '../../features/chat/data/call_service.dart';
 import 'chat_provider.dart';
 
 class ChatDetailScreen extends ConsumerStatefulWidget {
@@ -77,6 +78,21 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       source: source,
     );
     context.pop();
+  }
+
+  void _startCall(CallType callType) {
+    final chatProvider = ref.read(chatNotifierProvider);
+    final calleeId = chatProvider.otherUser?.id;
+    if (calleeId == null || calleeId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No recipient available for this chat')),
+      );
+      return;
+    }
+
+    context.push(
+      '/call/${widget.chatId}?calleeId=$calleeId&type=${callType.value}',
+    );
   }
 
   void _pickVideo(ImageSource source) {
@@ -265,8 +281,14 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         ],
       ),
       actions: [
-        _buildCircularHeaderAction(LucideIcons.video),
-        _buildCircularHeaderAction(LucideIcons.phone),
+        _buildCircularHeaderAction(
+          LucideIcons.video,
+          onPressed: () => _startCall(CallType.video),
+        ),
+        _buildCircularHeaderAction(
+          LucideIcons.phone,
+          onPressed: () => _startCall(CallType.voice),
+        ),
         _buildCircularHeaderAction(
           LucideIcons.moreHorizontal,
           onPressed: () => _showMoreOptions(context, chat),

@@ -53,13 +53,13 @@ final class ServerpodMediaUploadService implements MediaUploadService {
       }
     }
 
-    final fetchUrl = await _uploader.uploadFile(
+    final result = await _uploader.uploadFile(
       file: file,
       mimeType: mimeType,
       chatId: chatId,
       onProgress: onProgress != null ? guardedProgress : null,
     );
 
-    return fetchUrl;
+    return result.fetchUrl;
   }
 }

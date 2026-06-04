@@ -174,9 +174,8 @@ class ResponsiveSystem {
     final typographyScaleFactor = _getTypographyScaleFactor();
     final scaledFontSize = baseFontSize * typographyScaleFactor;
 
-    // Step 3: Apply textScaler from MediaQuery for accessibility
-    final textScaler = _mediaQuery.textScaler;
-    final accessibleFontSize = textScaler.scale(scaledFontSize);
+    // Step 3: Apply clamped text scaling from MediaQuery for accessibility
+    final accessibleFontSize = scaledFontSize * textScaleFactor;
 
     // Step 4: Clamp result between minFontSize and maxFontSize
     final finalFontSize = accessibleFontSize.clamp(

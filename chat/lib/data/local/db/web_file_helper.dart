@@ -8,6 +8,10 @@ class File {
 
 File createPlatformFile(String path) => File(path);
 
+Future<QueryExecutor> buildNativeDatabase() async {
+  throw UnsupportedError('Native database builder is not available on web.');
+}
+
 Future<QueryExecutor> openNativeOrWebDatabase({
   required Future<QueryExecutor> Function() nativeDbBuilder,
 }) async {

@@ -1,30 +1,56 @@
-import 'package:chat_client/chat_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
-import '../env/env.dart';
+import 'package:chat_client/chat_client.dart';
+import '../config/environment.dart';
 import 'serverpod_auth_key_manager.dart';
 
-/// Provides the [ServerpodAuthKeyManager] backed by [FlutterSecureStorage].
-///
-/// Created once per [ProviderScope]; no disposal needed (stateless wrapper).
-final authKeyManagerProvider = Provider<ServerpodAuthKeyManager>((ref) {
-  return ServerpodAuthKeyManager(const FlutterSecureStorage());
+/// Provider for application environment configuration
+final appEnvironmentProvider = Provider<AppEnvironment>((ref) {
+  // Default to development environment
+  // This can be overridden in main.dart based on .env or build configuration
+  return AppEnvironment.development;
 });
 
-/// Provides the generated Serverpod [Client], configured with:
-/// - [ServerpodAuthKeyManager] so every RPC carries the bearer token.
-/// - `disconnectStreamsOnLostInternetConnection: true` (Requirement 1.6).
-///
-/// Created exactly once per [ProviderScope]; closed on teardown (Requirement 1.1).
+/// Provider for Flutter secure storage
+final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
+  return const FlutterSecureStorage();
+});
+
+/// Provider for Serverpod auth key manager
+final serverpodAuthKeyManagerProvider = Provider<ServerpodAuthKeyManager>((ref) {
+  final storage = ref.watch(secureStorageProvider);
+  return ServerpodAuthKeyManager(storage);
+});
+
+/// Provider for Serverpod client instance
 final serverpodClientProvider = Provider<Client>((ref) {
-  final manager = ref.watch(authKeyManagerProvider);
-  final client = Client(
-    Env.serverpodApiUrl,
-    // ignore: deprecated_member_use
-    authenticationKeyManager: manager,
-    disconnectStreamsOnLostInternetConnection: true,
-  );
-  ref.onDispose(client.close);
+  final environment = ref.watch(appEnvironmentProvider);
+  final config = environment.serverpodConfig;
+  final authKeyManager = ref.watch(serverpodAuthKeyManagerProvider);
+
+  final client = Client(config.apiUrl);
+  client.authKeyProvider = authKeyManager;
+
+  // Log configuration in debug mode
+  environment.logConfig();
+
   return client;
+});
+
+/// Provider for streaming connection (if needed)
+final serverpodStreamingProvider = Provider<bool>((ref) {
+  final environment = ref.watch(appEnvironmentProvider);
+  return environment.serverpodConfig.streaming;
+});
+
+/// Helper to get the current Serverpod API URL
+final serverpodApiUrlProvider = Provider<String>((ref) {
+  final environment = ref.watch(appEnvironmentProvider);
+  return environment.serverpodConfig.apiUrl;
+});
+
+/// Helper to get the current Serverpod streaming URL
+final serverpodStreamingUrlProvider = Provider<String>((ref) {
+  final environment = ref.watch(appEnvironmentProvider);
+  return environment.serverpodConfig.streamingUrl;
 });

@@ -6,6 +6,8 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../core/async_state_widgets.dart';
 import '../core/shadow_background.dart';
 import '../providers/app_providers.dart';
+import '../stories/stories_feed_widget.dart';
+import '../../features/stories/application/story_notifier.dart';
 
 class InboxScreen extends ConsumerStatefulWidget {
   const InboxScreen({super.key});
@@ -28,6 +30,8 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
         chat.listenToRecentChats(auth.currentUser!.id);
         chat.listenToMoments();
       }
+      // Load stories feed
+      ref.read(storyNotifierProvider.notifier).loadStories();
     });
   }
 
@@ -117,169 +121,8 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
   }
 
   Widget _buildMomentsSection() {
-    final chat = ref.watch(chatNotifierProvider);
-    final moments = chat.moments;
-    return Container(
-      height: 120,
-      margin: const EdgeInsets.only(top: 16),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: moments.length + 1,
-        itemBuilder: (context, index) {
-          if (index == 0) {
-            return Row(
-              children: [
-                _buildMomentItem('You', null, isMe: true),
-                Container(
-                  width: 1,
-                  height: 40,
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  color: Colors.white.withValues(alpha: 0.1),
-                ),
-              ],
-            );
-          }
-          final moment = moments[index - 1];
-          return _buildMomentItem(
-            moment.userName,
-            moment.userImageUrl,
-            statusCount: 1, // Simplified for MVP
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildMomentItem(
-    String name,
-    String? imageUrl, {
-    bool isMe = false,
-    int? statusCount,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-      child: InkWell(
-        onTap: isMe ? _showAddStoryOptions : null,
-        child: Column(
-        children: [
-          Stack(
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                padding: const EdgeInsets.all(3),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isMe
-                        ? Colors.white.withValues(alpha: 0.1)
-                        : Colors.orange.withValues(alpha: 0.4),
-                    width: 1.5,
-                  ),
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    image: imageUrl != null
-                        ? DecorationImage(
-                            image: NetworkImage(imageUrl),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
-                    color: Colors.grey[900],
-                  ),
-                  child: isMe
-                      ? const Icon(
-                          LucideIcons.plus,
-                          color: Colors.white60,
-                          size: 24,
-                        )
-                      : null,
-                ),
-              ),
-              if (statusCount != null)
-                Positioned(
-                  right: 4,
-                  top: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.grey,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Text(
-                      statusCount.toString(),
-                      style: const TextStyle(
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            name,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: Colors.white.withValues(alpha: 0.8),
-            ),
-          ),
-        ],
-      ),
-      ),
-    );
-  }
-
-  void _showAddStoryOptions() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.grey[900],
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(LucideIcons.camera, color: Colors.white),
-              title: const Text('Take Photo', style: TextStyle(color: Colors.white)),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Camera feature coming soon')),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(LucideIcons.image, color: Colors.white),
-              title: const Text('Choose from Gallery', style: TextStyle(color: Colors.white)),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Gallery feature coming soon')),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(LucideIcons.type, color: Colors.white),
-              title: const Text('Text Status', style: TextStyle(color: Colors.white)),
-              onTap: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Text status feature coming soon')),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
+    // Stories feed replaces the old moments section.
+    return const StoriesFeedWidget();
   }
 
   Widget _buildRecentChatsFilter() {
@@ -535,9 +378,8 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                     _selectedNavIndex == 2,
                     onPressed: () {
                       setState(() => _selectedNavIndex = 2);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Updates feature coming soon')),
-                      );
+                      // Reload the stories feed when tab is tapped
+                      ref.read(storyNotifierProvider.notifier).loadStories();
                     },
                   ),
                 ],

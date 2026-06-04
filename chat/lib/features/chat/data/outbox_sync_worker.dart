@@ -104,6 +104,16 @@ final class OutboxSyncWorker {
     _outboxSub = null;
   }
 
+  /// Re-subscribes to the current outbox stream so freshly eligible entries are
+  /// processed immediately after connectivity is restored.
+  Future<void> refresh() async {
+    if (_disposed || !_running) return;
+    await _outboxSub?.cancel();
+    _outboxSub = _syncRepo
+        .watchOutbox(states: ['pending', 'failed'])
+        .listen(_onOutboxBatch);
+  }
+
   /// Dispose all resources. The worker cannot be restarted after disposal.
   void dispose() {
     _disposed = true;

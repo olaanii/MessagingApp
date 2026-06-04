@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/device/device_id_service.dart';
 import '../../../core/serverpod/serverpod_client_provider.dart';
 import '../../../data/providers/repository_providers.dart';
 import '../../../core/crypto/e2ee_engine.dart';
+import '../data/chat_key_store.dart';
 import '../data/stream_subscription_service.dart';
 
 // ── Connection state ──────────────────────────────────────────────────────────
@@ -46,13 +48,19 @@ class ChatStreamNotifier extends Notifier<ChatStreamConnectionState> {
   ChatStreamConnectionState build() {
     final client = ref.watch(serverpodClientProvider);
     final messageRepo = ref.watch(messageRepositoryProvider);
+    final keyStore = ref.watch(chatKeyStoreProvider);
+    final deviceIdAsync = ref.watch(deviceIdFutureProvider);
+    final deviceId = deviceIdAsync.asData?.value;
+
+    if (deviceId == null) {
+      return ChatStreamConnectionState.idle;
+    }
 
     _service = StreamSubscriptionServiceImpl.fromClient(
       client: client,
       messageRepository: messageRepo,
       crypto: E2eeEngine(),
-      // TODO(task-7): replace with ChatKeyStore.getChatKey once task 7.1 is done.
-      getChatKey: (_) async => null,
+      getChatKey: keyStore.getChatKey,
     );
 
     // Listen for auth-required connection events.
@@ -65,7 +73,7 @@ class ChatStreamNotifier extends Notifier<ChatStreamConnectionState> {
     // Open the stream. Outbound messages are sent by OutboxSyncWorker (task 8).
     final inboundStream = _service!.subscribe(
       chatId: _chatId,
-      deviceId: _deviceId(),
+      deviceId: deviceId,
       outbound: const Stream.empty(),
     );
 
@@ -93,9 +101,6 @@ class ChatStreamNotifier extends Notifier<ChatStreamConnectionState> {
     _service?.dispose();
     _service = null;
   }
-
-  /// Stable device ID — placeholder until device identity store is wired (task 3.1).
-  String _deviceId() => 'local_device';
 }
 
 /// Provider family keyed by [chatId].

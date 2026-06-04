@@ -1,142 +1,73 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../../data/services/auth_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../domain/models/user_model.dart';
-import 'dart:async';
+import '../../features/auth/application/auth_notifier.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final AuthService _authService = AuthService();
+  AuthProvider(this._ref);
 
-  bool _isLoading = false;
-  String? _error;
-  UserModel? _user;
-  bool _codeSent = false;
-  StreamSubscription<User?>? _authSubscription;
+  final Ref _ref;
 
-  bool get isLoading => _isLoading;
-  String? get error => _error;
-  UserModel? get user => _user;
-  UserModel? get currentUser => _user; // Added for UI compatibility
-  bool get codeSent => _codeSent;
-  bool get isAuthenticated => _user != null || _authService.currentUser != null;
+  AsyncValue<AuthState> _authValue = const AsyncLoading();
 
-  void setLoading(bool value) {
-    _isLoading = value;
+  bool get isLoading =>
+      _authValue.isLoading || _authValue.value is AuthStateLoading;
+  String? get error {
+    final value = _authValue.value;
+    return switch (value) {
+      AuthStateError(:final message) => message,
+      _ => null,
+    };
+  }
+  UserModel? get user => currentUser;
+  UserModel? get currentUser {
+    final value = _authValue.value;
+    return switch (value) {
+      AuthStateAuthenticated(:final user) => user,
+      _ => null,
+    };
+  }
+  bool get codeSent => _authValue.value is AuthStateCodeSent;
+  bool get isAuthenticated => currentUser != null;
+
+  void syncState(AsyncValue<AuthState> value) {
+    _authValue = value;
     notifyListeners();
   }
 
-  AuthProvider() {
-    _init();
-  }
-
-  void _init() {
-    _authSubscription = _authService.authStateChanges.listen((
-      firebaseUser,
-    ) async {
-      if (firebaseUser == null) {
-        _user = null;
-        notifyListeners();
-      } else {
-        // Recovery: Fetch user model if it exists in Firestore
-        _user = await _authService.getUser(firebaseUser.uid);
-        notifyListeners();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _authSubscription?.cancel();
-    super.dispose();
+  void setLoading(bool value) {
+    // No-op in the Riverpod-backed bridge; loading state comes from AuthNotifier.
   }
 
   Future<void> sendOtp(String phoneNumber) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
-    await _authService.sendOtp(
-      phoneNumber: phoneNumber,
-      onCodeSent: (String verificationId) {
-        _codeSent = true;
-        _isLoading = false;
-        notifyListeners();
-      },
-      onError: (String errorMsg) {
-        _error = errorMsg;
-        _isLoading = false;
-        notifyListeners();
-      },
-    );
+    await _ref.read(authNotifierV2Provider.notifier).sendOtp(phoneNumber);
   }
 
   Future<bool> verifyOtp(String smsCode) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-
-    try {
-      _user = await _authService.verifyOtpAndSignIn(smsCode);
-      return _user != null;
-    } catch (e) {
-      _error = e.toString();
-      return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+    return _ref.read(authNotifierV2Provider.notifier).verifyOtp(smsCode);
   }
 
   Future<void> logOut() async {
-    await _authService.logOut();
-    _user = null;
-    _codeSent = false;
-    notifyListeners();
+    await _ref.read(authNotifierV2Provider.notifier).logout();
   }
 
   Future<void> updateProfile({required String name, String? status}) async {
-    if (_user == null) return;
-
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      final updatedUser = _user!.copyWith(
-        name: name,
-        status: status ?? _user!.status,
-      );
-      await _authService.updateUser(updatedUser);
-      _user = updatedUser;
-    } catch (e) {
-      _error = e.toString();
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+    await _ref.read(authNotifierV2Provider.notifier).updateProfile(
+      name: name,
+      status: status,
+    );
   }
 
   Future<void> blockUser(String otherUserId) async {
-    if (_user == null) return;
-    try {
-      await _authService.blockUser(_user!.id, otherUserId);
-    } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-    }
+    await _ref.read(authNotifierV2Provider.notifier).blockUser(otherUserId);
   }
 
   Future<void> reportUser(String otherUserId, String chatId) async {
-    if (_user == null) return;
-    try {
-      await _authService.reportContent(
-        reporterId: _user!.id,
-        reportedUserId: otherUserId,
-        chatId: chatId,
-        reason: 'Reported by user from UI',
-      );
-    } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-    }
+    await _ref.read(authNotifierV2Provider.notifier).reportUser(
+      targetUserId: otherUserId,
+      targetChatId: chatId,
+      reason: 'Reported by user from UI',
+    );
   }
 }

@@ -149,27 +149,11 @@ final class ServerpodAuthRepositoryImpl implements ServerpodAuthRepository {
     required String deviceId,
     required PublicKeyBundle publicKeyBundle,
   }) async {
-    try {
-      // Call client.firebaseIdp.login with the Firebase ID token.
-      // The server verifies the token via Firebase Admin SDK, upserts the user
-      // in serverpod_auth_idp_firebase_account, and returns an AuthSuccess
-      // containing the Serverpod access token and refresh token.
-      final result = await _client.firebaseIdp.login(idToken: firebaseIdToken);
-
-      return TokenPair(
-        accessToken: result.token,
-        refreshToken: result.refreshToken ?? '',
-        expiresAt: result.tokenExpiresAt ??
-            DateTime.now().add(const Duration(hours: 1)),
-      );
-    } on ServerpodClientException catch (e) {
-      if (e.statusCode == 401 || e.statusCode == 403) {
-        throw const InvalidFirebaseTokenException();
-      }
-      throw AuthServerException('Server error during token exchange: $e');
-    } catch (e) {
-      throw AuthNetworkException('Network error during token exchange: $e');
-    }
+    // TODO(task-3.1): Replace with actual server endpoint once generated.
+    // The firebaseAuth endpoint is not yet implemented on the server.
+    throw const AuthServerException(
+      'Firebase auth endpoint not yet implemented (task 3.1)',
+    );
   }
 
   // ── refreshSession ────────────────────────────────────────────────────────
@@ -177,29 +161,9 @@ final class ServerpodAuthRepositoryImpl implements ServerpodAuthRepository {
   /// Requirements: 2.4, 2.5
   @override
   Future<TokenPair> refreshSession(String refreshToken) async {
-    try {
-      final result = await _client.jwtRefresh.refreshAccessToken(
-        refreshToken: refreshToken,
-      );
-
-      final newRefreshToken = result.refreshToken ?? refreshToken;
-      final pair = TokenPair(
-        accessToken: result.token,
-        refreshToken: newRefreshToken,
-        expiresAt: result.tokenExpiresAt ?? DateTime.now().add(const Duration(hours: 1)),
-      );
-
-      await Future.wait([
-        _authKeyManager.put(pair.accessToken),
-        _authKeyManager.storeRefreshToken(pair.refreshToken),
-      ]);
-
-      return pair;
-    } on AuthException {
-      rethrow;
-    } catch (e) {
-      throw SessionExpiredException('Token refresh failed: $e');
-    }
+    // TODO(task-3.1): Replace with actual server endpoint once generated.
+    // The jwtRefresh endpoint is not yet implemented on the server.
+    throw SessionExpiredException('Token refresh not yet implemented (task 3.1)');
   }
 
   // ── logout ────────────────────────────────────────────────────────────────

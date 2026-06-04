@@ -126,6 +126,51 @@ final class DriftSyncRepository implements SyncRepository {
   final AppDatabase _db;
 
   @override
+  Future<void> upsertPendingMedia({
+    required String id,
+    required String chatId,
+    required String localPath,
+    required int bytesUploaded,
+    int? totalBytes,
+    String state = 'pending',
+  }) async {
+    await _db.into(_db.pendingMedia).insertOnConflictUpdate(
+          PendingMediaCompanion.insert(
+            id: id,
+            chatId: chatId,
+            localPath: localPath,
+            bytesUploaded: Value(bytesUploaded),
+            totalBytes: Value(totalBytes),
+            state: Value(state),
+            createdAt: DateTime.now(),
+          ),
+        );
+  }
+
+  @override
+  Future<void> updatePendingMediaProgress({
+    required String id,
+    required int bytesUploaded,
+    int? totalBytes,
+    String? state,
+  }) async {
+    await (_db.update(_db.pendingMedia)..where((t) => t.id.equals(id))).write(
+      PendingMediaCompanion(
+        bytesUploaded: Value(bytesUploaded),
+        totalBytes: totalBytes != null
+            ? Value(totalBytes)
+            : const Value.absent(),
+        state: state != null ? Value(state) : const Value.absent(),
+      ),
+    );
+  }
+
+  @override
+  Future<void> deletePendingMedia(String id) async {
+    await (_db.delete(_db.pendingMedia)..where((t) => t.id.equals(id))).go();
+  }
+
+  @override
   Future<void> enqueueOperation({
     required String clientMsgId,
     required String chatId,

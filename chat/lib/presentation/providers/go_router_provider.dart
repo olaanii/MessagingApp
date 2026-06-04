@@ -6,18 +6,21 @@ import '../auth/create_profile_screen.dart';
 import '../auth/otp_verification_screen.dart';
 import '../auth/phone_entry_screen.dart';
 import '../chat/backup_restore_screen.dart';
+import '../chat/call_screen.dart';
 import '../chat/chat_detail_screen.dart';
 import '../chat/contacts_screen.dart';
 import '../chat/device_manager_screen.dart';
 import '../chat/global_search_screen.dart';
 import '../chat/group_creation_screen.dart';
 import '../chat/inbox_screen.dart';
+import '../../features/chat/data/call_service.dart';
 import '../onboarding/onboarding_screen.dart';
 import '../settings/bookmarked_messages_screen.dart';
 import '../settings/lock_chat_screen.dart';
 import '../settings/media_visibility_screen.dart';
 import '../settings/notification_settings_screen.dart';
 import '../settings/settings_screen.dart';
+import '../stories/story_composer_screen.dart';
 import 'app_providers.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
@@ -88,6 +91,21 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: '/call/:chatId',
+        builder: (context, state) {
+          final chatId = state.pathParameters['chatId']!;
+          final calleeAuthUserId = state.uri.queryParameters['calleeId'] ?? '';
+          final type = state.uri.queryParameters['type'] == 'video'
+              ? CallType.video
+              : CallType.voice;
+          return CallScreen(
+            chatId: chatId,
+            calleeAuthUserId: calleeAuthUserId,
+            callType: type,
+          );
+        },
+      ),
+      GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
       ),
@@ -122,6 +140,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settings/lock-chat',
         builder: (context, state) => const LockChatScreen(),
+      ),
+      GoRoute(
+        path: '/stories/compose',
+        builder: (context, state) => const StoryComposerScreen(),
       ),
     ],
   );

@@ -1,13 +1,9 @@
-import 'dart:io';
-
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
-import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
 
 import '../../../domain/models/chat_summary.dart';
 import '../../../domain/models/message_model.dart';
+import 'native_file_helper.dart'
+    if (dart.library.html) 'web_file_helper.dart';
 
 part 'app_database.g.dart';
 
@@ -96,14 +92,11 @@ class PendingMedia extends Table {
 }
 
 LazyDatabase openChatConnection() {
-  return LazyDatabase(() async {
-    if (Platform.isAndroid) {
-      await applyWorkaroundToOpenSqlite3OnOldAndroidVersions();
-    }
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dir.path, 'chat_local.db'));
-    return NativeDatabase.createInBackground(file);
-  });
+  return LazyDatabase(
+    () => openNativeOrWebDatabase(
+      nativeDbBuilder: buildNativeDatabase,
+    ),
+  );
 }
 
 @DriftDatabase(
@@ -128,6 +121,23 @@ class AppDatabase extends _$AppDatabase {
           await m.createAll();
         },
       );
+
+  Future<String?> getSyncCursor(String scopeKey) async {
+    final row = await (select(syncStates)
+          ..where((t) => t.scopeKey.equals(scopeKey)))
+        .getSingleOrNull();
+    return row?.cursor;
+  }
+
+  Future<void> setSyncCursor(String scopeKey, String? cursor) async {
+    await into(syncStates).insertOnConflictUpdate(
+      SyncStatesCompanion.insert(
+        scopeKey: scopeKey,
+        cursor: Value(cursor),
+        lastSyncedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+  }
 }
 
 extension LocalMessageMapping on LocalMessage {

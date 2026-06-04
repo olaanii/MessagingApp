@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cryptography/cryptography.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 // ── Interface ─────────────────────────────────────────────────────────────────
@@ -23,6 +24,16 @@ abstract interface class ChatKeyStore {
 }
 
 // ── Implementation ────────────────────────────────────────────────────────────
+
+/// [ChatKeyStore] backed by [FlutterSecureStorage].
+///
+/// Keys are serialised as base64-encoded raw bytes (32 bytes for ChaCha20-Poly1305).
+/// The storage key for a chat is `chat_key.<chatId>`.
+///
+/// Requirements: 6.3, 6.5, 6.6
+final chatKeyStoreProvider = Provider<ChatKeyStore>((ref) {
+  return FlutterSecureStorageChatKeyStore();
+});
 
 /// [ChatKeyStore] backed by [FlutterSecureStorage].
 ///

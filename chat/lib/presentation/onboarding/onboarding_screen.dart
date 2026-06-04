@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 import '../core/shadow_background.dart';
+import '../providers/app_providers.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -18,7 +20,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final List<_OnboardingPage> _pages = const [
     _OnboardingPage(
       icon: LucideIcons.messageSquare,
-      title: 'Secure Messaging',
+      title: 'Connect Smarter',
       description: 'End-to-end encrypted conversations to keep your messages private and secure.',
     ),
     _OnboardingPage(
@@ -172,7 +174,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             )
           else
             ElevatedButton(
-              onPressed: () => context.go('/'),
+              onPressed: () async {
+                final onboarding = ProviderScope.containerOf(
+                  context,
+                  listen: false,
+                ).read(onboardingHolderProvider);
+                await onboarding.markCompleted();
+                if (!mounted) return;
+                context.go('/');
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
                 foregroundColor: Colors.black,

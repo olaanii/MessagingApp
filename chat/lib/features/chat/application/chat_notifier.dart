@@ -5,10 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/sync/messaging_backend.dart';
+import '../../../core/serverpod/serverpod_client_provider.dart';
 import '../../../data/providers/repository_providers.dart';
 import '../../../data/services/messaging_service.dart';
+import '../../../data/services/serverpod_media_uploader.dart';
 import '../../../domain/models/message_model.dart';
 import '../data/media_upload_service.dart';
+import 'messaging_sync_mode_provider.dart';
 
 // ── Safety client abstraction ─────────────────────────────────────────────────
 
@@ -167,13 +170,6 @@ final class _MessagingServiceAdapter implements FirestoreMessagingDelegate {
 
 // ── Providers ─────────────────────────────────────────────────────────────────
 
-/// Provides the [MessagingSyncMode] singleton.
-///
-/// Overridable in tests to inject a specific mode.
-final messagingSyncModeProvider = Provider<MessagingSyncMode>(
-  (ref) => MessagingSyncMode(),
-);
-
 /// Provides the [FirestoreMessagingDelegate] used by the Firestore path.
 ///
 /// Overridable in tests to inject a fake without initialising Firebase.
@@ -188,7 +184,12 @@ final firestoreMessagingDelegateProvider =
 ///
 /// Requirements: 8.1, 8.5
 final mediaUploadServiceProvider = Provider<MediaUploadService?>(
-  (ref) => null, // Wired by the caller; null means Serverpod media not configured.
+  (ref) {
+    final client = ref.watch(serverpodClientProvider);
+    final uploader = ServerpodMediaUploader(client);
+    ref.onDispose(uploader.close);
+    return ServerpodMediaUploadService(uploader);
+  },
 );
 
 // ── ChatNotifier ──────────────────────────────────────────────────────────────
@@ -397,7 +398,7 @@ class ChatNotifier extends Notifier<ChatState> {
       'senderId': senderId,
       'receiverId': receiverId,
       'content': content,
-      'imageUrl': ?imageUrl,
+      'imageUrl': imageUrl ?? '',
     };
 
     // Encode payload as JSON string manually to avoid importing dart:convert
@@ -437,7 +438,7 @@ class ChatNotifier extends Notifier<ChatState> {
   }
 
   String _escape(String s) =>
-      s.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+      s.replaceAll('\\', r'\\').replaceAll('"', r'\"');
 }
 
 /// Provider family keyed by [chatId].

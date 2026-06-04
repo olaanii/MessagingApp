@@ -45,11 +45,13 @@ app.*.map.json
 /android/app/release
 
 # Environment variables & sensitive config
-.env*
-!.env.example
+.env
+.env.local
 lib/core/env/env.g.dart
 lib/firebase_options.dart
 google-services.json
+android/google-services.json
+android/app/google-services.json
 GoogleService-Info.plist
 
 # Markdown files (except README.md and /docs)

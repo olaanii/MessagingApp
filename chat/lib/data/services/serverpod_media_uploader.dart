@@ -14,8 +14,9 @@ class ServerpodMediaUploader {
   final Client _client;
   final http.Client _http;
 
-  /// Returns [MediaFinalizeResult.fetchUrl] for attaching to messages as `media_id` / preview URL.
-  Future<String> uploadFile({
+  /// Returns the finalized upload result so callers can access both
+  /// [MediaFinalizeResult.mediaId] and [MediaFinalizeResult.fetchUrl].
+  Future<MediaFinalizeResult> uploadFile({
     required File file,
     required String mimeType,
     String? chatId,
@@ -24,7 +25,7 @@ class ServerpodMediaUploader {
     int maxChunkRetries = 4,
   }) async {
     final length = await file.length();
-    final slot = await _client.media.requestUploadSlot(
+    final slot = await _client.media.requestUpload(
       MediaUploadRequest(
         fileName: file.path.split(Platform.pathSeparator).last,
         mimeType: mimeType,
@@ -58,7 +59,7 @@ class ServerpodMediaUploader {
         );
 
         offset += take;
-        onProgress?.call(length == 0 ? 1 : offset / length);
+        onProgress?.call(length == 0 ? 1.0 : offset / length);
       }
     } finally {
       await raf.close();
@@ -69,7 +70,7 @@ class ServerpodMediaUploader {
       slot.finalizeToken,
       length,
     );
-    return fin.fetchUrl;
+    return fin;
   }
 
   Future<void> _putChunkWithRetry({
