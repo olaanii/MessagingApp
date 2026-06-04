@@ -1,0 +1,272 @@
+# Serverpod Protocol Definitions v1
+# Production-Ready Privacy-Focused Chat Platform
+# 
+# This file defines the core data models for the Serverpod backend.
+# All models are versioned as protocol v1 and follow the architecture
+# defined in ADR-0001.
+
+# User Model
+# Represents a registered user in the system
+class: User
+fields:
+  id: String
+  firebaseUid: String  # Firebase Auth UID for authentication
+  displayName: String
+  photoUrl: String?
+  phoneNumber: String
+  statusMessage: String?
+  presenceStatus: String  # 'online', 'away', 'offline'
+  createdAt: DateTime
+  updatedAt: DateTime
+
+---
+
+# Device Model
+# Represents a device registered for multi-device support
+class: Device
+fields:
+  id: String
+  userId: String  # Foreign key to User
+  deviceId: String  # Unique device identifier
+  name: String  # User-friendly device name
+  platform: String  # 'android', 'ios', 'web'
+  publicKeyRef: String  # Reference to public key in device_keys table
+  lastSeenAt: DateTime
+  createdAt: DateTime
+  revokedAt: DateTime?
+
+---
+
+# Session Model
+# Represents an authenticated session tied to a device
+class: Session
+fields:
+  id: String
+  userId: String  # Foreign key to User
+  deviceId: String  # Foreign key to Device
+  refreshTokenHash: String
+  expiresAt: DateTime
+  createdAt: DateTime
+  revokedAt: DateTime?
+
+---
+
+# Chat Model
+# Represents a conversation (1:1 or group)
+class: Chat
+fields:
+  id: String
+  type: String  # 'direct' or 'group'
+  title: String?  # Group name (null for direct chats)
+  createdBy: String  # Foreign key to User
+  createdAt: DateTime
+  updatedAt: DateTime
+
+---
+
+# ChatMember Model
+# Represents membership in a chat
+class: ChatMember
+fields:
+  chatId: String  # Foreign key to Chat
+  userId: String  # Foreign key to User
+  role: String  # 'admin' or 'member'
+  joinedAt: DateTime
+  lastReadSeq: int  # Last message sequence number read by this user
+  mutedUntil: DateTime?
+
+---
+
+# Message Model
+# Represents an encrypted message in a chat
+# Server stores only ciphertext, never plaintext
+class: Message
+fields:
+  id: String
+  chatId: String  # Foreign key to Chat
+  senderId: String  # Foreign key to User
+  senderDeviceId: String  # Foreign key to Device
+  clientMsgId: String  # Client-generated idempotency key
+  serverSeq: int  # Server-assigned sequence number for ordering
+  ciphertext: String  # Encrypted message content (E2EE)
+  contentType: String  # 'text', 'image', 'video', 'audio', 'file'
+  mediaId: String?  # Foreign key to MediaObject (if media message)
+  createdAt: DateTime
+  updatedAt: DateTime
+  deletedAt: DateTime?  # Tombstone for deleted messages
+
+---
+
+# Media Model
+# Represents an encrypted media file
+class: Media
+fields:
+  id: String
+  uploaderId: String  # Foreign key to User
+  storageKey: String  # S3 or storage backend key
+  mimeType: String
+  sizeBytes: int
+  sha256Hash: String  # Hash of encrypted file
+  encrypted: bool  # Always true for E2EE
+  createdAt: DateTime
+
+---
+
+# KeyBundle Model
+# Represents public key material for E2EE session establishment
+class: KeyBundle
+fields:
+  deviceId: String  # Foreign key to Device
+  identityKey: String  # Ed25519 public identity key
+  signedPrekey: String  # X25519 signed prekey
+  signedPrekeySignature: String  # Ed25519 signature of signed prekey
+  oneTimePrekeys: List<OneTimePrekey>  # Available one-time prekeys
+  createdAt: DateTime
+  updatedAt: DateTime
+
+---
+
+# OneTimePrekey Model
+# Represents a single-use prekey for forward secrecy
+class: OneTimePrekey
+fields:
+  id: String
+  deviceId: String  # Foreign key to Device
+  keyId: int  # Sequential key identifier
+  publicKey: String  # X25519 public key
+  usedAt: DateTime?  # Null if unused, timestamp when consumed
+  createdAt: DateTime
+
+---
+
+# PushToken Model
+# Represents an FCM push notification token
+class: PushToken
+fields:
+  id: String
+  deviceId: String  # Foreign key to Device
+  userId: String  # Foreign key to User
+  token: String  # FCM token
+  platform: String  # 'android', 'ios', 'web'
+  createdAt: DateTime
+  updatedAt: DateTime
+
+---
+
+# Block Model
+# Represents a user blocking another user
+class: Block
+fields:
+  blockerId: String  # Foreign key to User (who blocked)
+  blockedId: String  # Foreign key to User (who was blocked)
+  createdAt: DateTime
+
+---
+
+# Report Model
+# Represents an abuse report for moderation
+class: Report
+fields:
+  id: String
+  reporterId: String  # Foreign key to User
+  reportedUserId: String?  # Foreign key to User (if reporting user)
+  reportedMessageId: String?  # Foreign key to Message (if reporting message)
+  reason: String  # 'spam', 'harassment', 'inappropriate', 'other'
+  context: String?  # Additional details
+  status: String  # 'pending', 'reviewed', 'resolved'
+  createdAt: DateTime
+  resolvedAt: DateTime?
+
+---
+
+# Story Model
+# Represents an ephemeral story (24h expiration)
+class: Story
+fields:
+  id: String
+  userId: String  # Foreign key to User
+  mediaId: String  # Foreign key to Media
+  ciphertext: String  # Encrypted story content
+  contentType: String  # 'photo', 'video', 'text'
+  expiresAt: DateTime  # 24 hours from creation
+  createdAt: DateTime
+
+---
+
+# StoryView Model
+# Represents a user viewing a story
+class: StoryView
+fields:
+  storyId: String  # Foreign key to Story
+  viewerId: String  # Foreign key to User
+  viewedAt: DateTime
+
+---
+
+# StreamEvent Model
+# Represents a real-time event in the streaming endpoint
+# This is the envelope structure for all streaming events
+class: StreamEvent
+fields:
+  type: String  # Event type: 'message', 'message_ack', 'typing', 'presence', 'sync_hint', 'error'
+  chatId: String?  # Chat context (if applicable)
+  deviceId: String?  # Device context (if applicable)
+  timestamp: DateTime
+  idempotencyKey: String?  # For deduplication
+  payload: Map<String, dynamic>  # Event-specific data
+
+---
+
+# SendMessageRequest Model
+# Request payload for sending a message
+class: SendMessageRequest
+fields:
+  chatId: String
+  clientMsgId: String  # Idempotency key
+  ciphertext: String  # Encrypted message content
+  contentType: String
+  mediaId: String?
+  recipientDeviceIds: List<String>?  # For multi-device encryption
+
+---
+
+# MediaUploadRequest Model
+# Request payload for preparing media upload
+class: MediaUploadRequest
+fields:
+  mimeType: String
+  sizeBytes: int
+  sha256Hash: String
+
+---
+
+# PushPreferences Model
+# User preferences for push notifications
+class: PushPreferences
+fields:
+  userId: String
+  enableNotifications: bool
+  enableSound: bool
+  enableVibration: bool
+  mutedChatIds: List<String>  # Chats with notifications muted
+
+---
+
+# SyncCursor Model
+# Represents a synchronization cursor for incremental sync
+class: SyncCursor
+fields:
+  cursor: String  # Opaque cursor string
+  timestamp: DateTime
+  lastSeq: int  # Last server sequence number synced
+
+---
+
+# ChangeSet Model
+# Represents a set of changes for incremental sync
+class: ChangeSet
+fields:
+  cursor: String  # New cursor for next sync
+  messages: List<Message>  # New or updated messages
+  deletions: List<String>  # Message IDs that were deleted
+  hasMore: bool  # Whether more changes are available
